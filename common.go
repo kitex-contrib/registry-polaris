@@ -27,6 +27,14 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
+// instanceInfo used to stored service basic info in polaris.
+type instanceInfo struct {
+	Network string            `json:"network"`
+	Address string            `json:"address"`
+	Weight  int               `json:"weight"`
+	Tags    map[string]string `json:"tags"`
+}
+
 // GetPolarisConfig get polaris config from endpoints
 func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	if len(endpoints) == 0 {

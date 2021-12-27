@@ -31,11 +31,11 @@ import (
 )
 
 var (
-	protocolForKitex            string = "tcp"
-	defaultHeartbeatIntervalSec        = 5
+	protocolForKitex            = "tcp"
+	defaultHeartbeatIntervalSec = 5
 )
 
-// Registry Extension - Registry
+// Registry is extension interface of Kitex Registry.
 type Registry interface {
 	registry.Registry
 
@@ -44,13 +44,14 @@ type Registry interface {
 	// todo add watch
 }
 
+// polarisRegistry is a registry using etcd.
 type polarisRegistry struct {
 	endpoints []string
 	consumer  api.ConsumerAPI
 	provider  api.ProviderAPI
 }
 
-// // NewPolarisRegistry creates a polaris based registry.
+// NewPolarisRegistry creates a polaris based registry.
 func NewPolarisRegistry(endpoints []string) (Registry, error) {
 
 	sdkCtx, err := GetPolarisConfig(endpoints)
@@ -102,12 +103,12 @@ func (svr *polarisRegistry) Deregister(info *registry.Info) error {
 
 }
 
-// IsAvailable always return true when use polaris
+// IsAvailable always return true when use polaris.
 func (pr *polarisRegistry) IsAvailable() bool {
 	return true
 }
 
-// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it
+// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
 
@@ -117,7 +118,7 @@ func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRe
 			Namespace: ins.Namespace,
 			Host:      ins.Host,
 			Port:      ins.Port,
-			Timeout:   model.ToDurationPtr(60 * time.Second),
+			Timeout:   model.ToDurationPtr(5 * time.Second),
 		},
 	}
 	for {
@@ -140,7 +141,7 @@ func validateRegistryInfo(info *registry.Info) error {
 	return nil
 }
 
-// createRegisterParam convert registry.Info to polaris instance register request
+// createRegisterParam convert registry.Info to polaris instance register request.
 func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 	host, port, err := net.SplitHostPort(info.Addr.String())
 	if err != nil {
@@ -160,11 +161,13 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 	}
 
 	req.SetTTL(defaultHeartbeatIntervalSec)
+	// If the TTL field is not set, polaris will think that this instance does not need to perform the heartbeat health check operation,
+	// then after the instance goes offline, the instance cannot be converted to unhealthy normally.
 
 	return req
 }
 
-// createDeregisterParam convert registry.info to polaris instance deregister request
+// createDeregisterParam convert registry.info to polaris instance deregister request.
 func createDeregisterParam(info *registry.Info) *api.InstanceDeRegisterRequest {
 	host, port, err := net.SplitHostPort(info.Addr.String())
 	if err != nil {

@@ -32,7 +32,7 @@ type HelloImpl struct{}
 
 func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
 	resp = &api.Response{
-		Message: req.Message+"Hi,Kitex!",
+		Message: req.Message + "Hi,Kitex!",
 	}
 	return
 }
@@ -44,7 +44,7 @@ func main() {
 	}
 	server := hello.NewServer(new(HelloImpl), server.WithRegistry(r), server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
 		ServiceName: "golang",
-	}),server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8888}))
+	}), server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8888}))
 
 	err = server.Run()
 	if err != nil {

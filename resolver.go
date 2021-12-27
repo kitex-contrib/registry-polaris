@@ -35,29 +35,23 @@ const (
 	PolarisDefaultNamespace = "default"
 )
 
-// instanceInfo used to stored service basic info in polaris.
-type instanceInfo struct {
-	Network string            `json:"network"`
-	Address string            `json:"address"`
-	Weight  int               `json:"weight"`
-	Tags    map[string]string `json:"tags"`
-}
-
-// Registry
+// Resolver is extension interface of Kitex Resolver.
 type Resolver interface {
 	discovery.Resolver
 
 	doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest)
+
+	// todo add watch
 }
 
-// PolarisResolver is a resolver using Polaris.
+// PolarisResolver is a resolver using polaris.
 type PolarisResolver struct {
 	namespace string
 	provider  api.ProviderAPI
 	consumer  api.ConsumerAPI
 }
 
-// NewPolarisResolver creates a Polaris based resolver.
+// NewPolarisResolver creates a polaris based resolver.
 func NewPolarisResolver(endpoints []string) (Resolver, error) {
 
 	sdkCtx, err := GetPolarisConfig(endpoints)
@@ -126,7 +120,7 @@ func (polaris *PolarisResolver) Name() string {
 	return "Polaris"
 }
 
-// doHeartbeat
+// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (polaris *PolarisResolver) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 
 	ticker := time.NewTicker(time.Duration(4) * time.Second)
