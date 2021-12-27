@@ -26,7 +26,6 @@ import (
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
-	"sync"
 	"time"
 )
 
@@ -45,7 +44,6 @@ type instanceInfo struct {
 
 // Registry
 type Resolver interface {
-
 	discovery.Resolver
 
 	doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest)
@@ -53,20 +51,13 @@ type Resolver interface {
 
 // PolarisResolver is a resolver using Polaris.
 type PolarisResolver struct {
-	namespace    string
-	provider     api.ProviderAPI
-	consumer     api.ConsumerAPI
-	services     *sync.Map
-	instanceLock *sync.RWMutex
+	namespace string
+	provider  api.ProviderAPI
+	consumer  api.ConsumerAPI
 }
 
 // NewPolarisResolver creates a Polaris based resolver.
 func NewPolarisResolver(endpoints []string) (Resolver, error) {
-	return NewPolarisResolverWithAuth(endpoints, "", "")
-}
-
-// NewPolarisResolverWithAuth creates a Polaris based resolver with given username and password.
-func NewPolarisResolverWithAuth(endpoints []string, username, password string) (Resolver, error) {
 
 	sdkCtx, err := GetPolarisConfig(endpoints)
 
@@ -75,11 +66,9 @@ func NewPolarisResolverWithAuth(endpoints []string, username, password string) (
 	}
 
 	newInstance := &PolarisResolver{
-		namespace:    PolarisDefaultNamespace,
-		instanceLock: &sync.RWMutex{},
-		consumer:     api.NewConsumerAPIByContext(sdkCtx),
-		provider:     api.NewProviderAPIByContext(sdkCtx),
-		services:     new(sync.Map),
+		namespace: PolarisDefaultNamespace,
+		consumer:  api.NewConsumerAPIByContext(sdkCtx),
+		provider:  api.NewProviderAPIByContext(sdkCtx),
 	}
 
 	return newInstance, nil
@@ -96,14 +85,14 @@ func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (disco
 		info instanceInfo
 		eps  []discovery.Instance
 	)
-	getOneRequest := &api.GetInstancesRequest{}
-	getOneRequest.Namespace = PolarisDefaultNamespace
-	getOneRequest.Service = desc
-	oneInstResp, err := polaris.consumer.GetInstances(getOneRequest)
+	getInstances := &api.GetInstancesRequest{}
+	getInstances.Namespace = PolarisDefaultNamespace
+	getInstances.Service = desc
+	InstanceResp, err := polaris.consumer.GetInstances(getInstances)
 	if nil != err {
 		log.Fatalf("fail to getOneInstance, err is %v", err)
 	}
-	instances := oneInstResp.GetInstances()
+	instances := InstanceResp.GetInstances()
 	if nil != instances {
 		for _, instance := range instances {
 			log.Printf("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())

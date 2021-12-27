@@ -23,16 +23,15 @@ import (
 	"github.com/polarismesh/polaris-go/api"
 	"net"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/registry"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
-
 var (
-	protocolForKitex string = "tcp"
+	protocolForKitex            string = "tcp"
+	defaultHeartbeatIntervalSec        = 5
 )
 
 // Registry Extension - Registry
@@ -48,16 +47,10 @@ type polarisRegistry struct {
 	endpoints []string
 	consumer  api.ConsumerAPI
 	provider  api.ProviderAPI
-	lock      *sync.RWMutex
 }
 
-// NewPolarisRegistry creates a Polaris based registry.
+// // NewPolarisRegistry creates a Polaris based registry.
 func NewPolarisRegistry(endpoints []string) (Registry, error) {
-	return NewPolarisRegistryWithAuth(endpoints, "", "")
-}
-
-// NewPolarisRegistryWithAuth creates a polaris based registry with given username and password.
-func NewPolarisRegistryWithAuth(endpoints []string, username, password string) (Registry, error) {
 
 	sdkCtx, err := GetPolarisConfig(endpoints)
 	if err != nil {
@@ -66,7 +59,6 @@ func NewPolarisRegistryWithAuth(endpoints []string, username, password string) (
 	pRegistry := &polarisRegistry{
 		consumer: api.NewConsumerAPIByContext(sdkCtx),
 		provider: api.NewProviderAPIByContext(sdkCtx),
-		lock:     &sync.RWMutex{},
 	}
 
 	return pRegistry, nil
@@ -86,8 +78,6 @@ func (svr *polarisRegistry) Register(info *registry.Info) error {
 		klog.Warnf("instance already registered, namespace:%s, service:%s, port:%s",
 			param.Namespace, param.Service, param.Host)
 	}
-	svr.lock.Lock()
-	defer svr.lock.Unlock()
 
 	ctx, _ := context.WithCancel(context.Background())
 
@@ -158,16 +148,20 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 	}
 	Instanceport, _ := strconv.Atoi(port)
 
-	return &api.InstanceRegisterRequest{
+	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:   info.ServiceName,
 			Namespace: PolarisDefaultNamespace,
 			Host:      host,
 			Port:      Instanceport,
 			Protocol:  &protocolForKitex,
-			Timeout: model.ToDurationPtr(10 * time.Second),
+			Timeout:   model.ToDurationPtr(10 * time.Second),
 		},
 	}
+
+	req.SetTTL(defaultHeartbeatIntervalSec) //
+
+	return req
 }
 
 // createDeregisterParam convert registry.info to polaris instance deregister request
