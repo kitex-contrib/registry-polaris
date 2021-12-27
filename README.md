@@ -3,9 +3,9 @@
 Some application runtime use [polaris](https://github.com/polarismesh/polaris) for service discovery.Polaris is a cloud-native service discovery and governance center. 
 It can be used to solve the problem of service connection, fault tolerance, traffic control and secure in distributed and microservice architecture.
 
-## How to use with registry-polaris?
+## How to install registry-polaris?
 ```
-go get -u -v github.com/kitex-contrib/registry-polaris
+go get -u github.com/kitex-contrib/registry-polaris
 ```
 
 ## How to use with Kitex server?
@@ -62,8 +62,8 @@ func main() {
     ...
 }
 ```
-## How to install Polaris?
-Polaris support stand-alone and cluster. More information can be found in [install Polaris](https://polarismesh.cn/zh/doc/%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8/%E5%AE%89%E8%A3%85%E6%9C%8D%E5%8A%A1%E7%AB%AF/%E5%AE%89%E8%A3%85%E5%8D%95%E6%9C%BA%E7%89%88.html#%E5%8D%95%E6%9C%BA%E7%89%88%E5%AE%89%E8%A3%85)
+## How to install polaris?
+Polaris support stand-alone and cluster. More information can be found in [install polaris](https://polarismesh.cn/zh/doc/%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8/%E5%AE%89%E8%A3%85%E6%9C%8D%E5%8A%A1%E7%AB%AF/%E5%AE%89%E8%A3%85%E5%8D%95%E6%9C%BA%E7%89%88.html#%E5%8D%95%E6%9C%BA%E7%89%88%E5%AE%89%E8%A3%85)
 
 ## Todolist
    Use polaris's watch mechanism to monitor registered service changes

@@ -1,27 +1,28 @@
-// Copyright 2021 CloudWeGo authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright 2021 CloudWeGo Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-// package Polaris resolver
 package polaris
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
@@ -90,12 +91,12 @@ func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (disco
 	getInstances.Service = desc
 	InstanceResp, err := polaris.consumer.GetInstances(getInstances)
 	if nil != err {
-		log.Fatalf("fail to getOneInstance, err is %v", err)
+		klog.Fatalf("fail to getOneInstance, err is %v", err)
 	}
 	instances := InstanceResp.GetInstances()
 	if nil != instances {
 		for _, instance := range instances {
-			log.Printf("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
+			klog.Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
 			weight := instance.GetWeight()
 			if weight <= 0 {
 				weight = defaultWeight
