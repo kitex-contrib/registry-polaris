@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/cloudwego/kitex/pkg/klog"
@@ -27,7 +28,6 @@ import (
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
-	"time"
 )
 
 const (
@@ -123,7 +123,7 @@ func (polaris *PolarisResolver) Name() string {
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (polaris *PolarisResolver) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 
-	ticker := time.NewTicker(time.Duration(4) * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 
 	heartbeat := &api.InstanceHeartbeatRequest{
 		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{

@@ -33,6 +33,8 @@ import (
 var (
 	protocolForKitex            = "tcp"
 	defaultHeartbeatIntervalSec = 5
+	registerTimeout             = 10 * time.Second
+	heartbeatTimeout            = 5 * time.Second
 )
 
 // Registry is extension interface of Kitex Registry.
@@ -46,9 +48,8 @@ type Registry interface {
 
 // polarisRegistry is a registry using etcd.
 type polarisRegistry struct {
-	endpoints []string
-	consumer  api.ConsumerAPI
-	provider  api.ProviderAPI
+	consumer api.ConsumerAPI
+	provider api.ProviderAPI
 }
 
 // NewPolarisRegistry creates a polaris based registry.
@@ -110,7 +111,7 @@ func (pr *polarisRegistry) IsAvailable() bool {
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
-	ticker := time.NewTicker(time.Duration(4) * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 
 	heartbeat := &api.InstanceHeartbeatRequest{
 		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
@@ -118,7 +119,7 @@ func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRe
 			Namespace: ins.Namespace,
 			Host:      ins.Host,
 			Port:      ins.Port,
-			Timeout:   model.ToDurationPtr(5 * time.Second),
+			Timeout:   model.ToDurationPtr(heartbeatTimeout),
 		},
 	}
 	for {
@@ -156,7 +157,7 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 			Host:      host,
 			Port:      Instanceport,
 			Protocol:  &protocolForKitex,
-			Timeout:   model.ToDurationPtr(10 * time.Second),
+			Timeout:   model.ToDurationPtr(registerTimeout),
 		},
 	}
 
