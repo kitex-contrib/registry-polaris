@@ -28,12 +28,6 @@ jobs:
       - name: typos-action
         uses: crate-ci/typos@v1.2.1
 
-      - name: Lint
-        run: |
-          go vet -stdmethods=false $(go list ./...)
-          go install mvdan.cc/gofumpt@v0.2.0
-          test -z "$(gofumpt -l -extra .)" 
-
       - name: Prepare polaris-server
         run: |
           make prepare
