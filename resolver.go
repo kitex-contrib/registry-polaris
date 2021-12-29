@@ -39,16 +39,18 @@ const (
 type Resolver interface {
 	discovery.Resolver
 
-	doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest)
+	doHeartbeat(ins *api.InstanceRegisterRequest)
 
 	// todo add watch
 }
 
 // PolarisResolver is a resolver using polaris.
 type PolarisResolver struct {
-	namespace string
-	provider  api.ProviderAPI
-	consumer  api.ConsumerAPI
+	namespace  string
+	provider   api.ProviderAPI
+	consumer   api.ConsumerAPI
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 }
 
 // NewPolarisResolver creates a polaris based resolver.
@@ -60,10 +62,14 @@ func NewPolarisResolver(endpoints []string) (Resolver, error) {
 		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
 	}
 
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
 	newInstance := &PolarisResolver{
-		namespace: PolarisDefaultNamespace,
-		consumer:  api.NewConsumerAPIByContext(sdkCtx),
-		provider:  api.NewProviderAPIByContext(sdkCtx),
+		namespace:  PolarisDefaultNamespace,
+		consumer:   api.NewConsumerAPIByContext(sdkCtx),
+		provider:   api.NewProviderAPIByContext(sdkCtx),
+		ctx:        ctx,
+		cancelFunc: cancelFunc,
 	}
 
 	return newInstance, nil
@@ -80,6 +86,7 @@ func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (disco
 		info instanceInfo
 		eps  []discovery.Instance
 	)
+
 	getInstances := &api.GetInstancesRequest{}
 	getInstances.Namespace = PolarisDefaultNamespace
 	getInstances.Service = desc
@@ -121,7 +128,7 @@ func (polaris *PolarisResolver) Name() string {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
-func (polaris *PolarisResolver) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
+func (polaris *PolarisResolver) doHeartbeat(ins *api.InstanceRegisterRequest) {
 
 	ticker := time.NewTicker(5 * time.Second)
 
@@ -136,7 +143,7 @@ func (polaris *PolarisResolver) doHeartbeat(ctx context.Context, ins *api.Instan
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-polaris.ctx.Done():
 			return
 		case <-ticker.C:
 			polaris.provider.Heartbeat(heartbeat)

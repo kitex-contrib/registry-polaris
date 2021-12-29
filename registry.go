@@ -41,15 +41,17 @@ var (
 type Registry interface {
 	registry.Registry
 
-	doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest)
+	doHeartbeat(ins *api.InstanceRegisterRequest)
 
 	// todo add watch
 }
 
 // polarisRegistry is a registry using etcd.
 type polarisRegistry struct {
-	consumer api.ConsumerAPI
-	provider api.ProviderAPI
+	consumer   api.ConsumerAPI
+	provider   api.ProviderAPI
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 }
 
 // NewPolarisRegistry creates a polaris based registry.
@@ -59,9 +61,12 @@ func NewPolarisRegistry(endpoints []string) (Registry, error) {
 	if err != nil {
 		return &polarisRegistry{}, err
 	}
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	pRegistry := &polarisRegistry{
-		consumer: api.NewConsumerAPIByContext(sdkCtx),
-		provider: api.NewProviderAPIByContext(sdkCtx),
+		consumer:   api.NewConsumerAPIByContext(sdkCtx),
+		provider:   api.NewProviderAPIByContext(sdkCtx),
+		ctx:        ctx,
+		cancelFunc: cancelFunc,
 	}
 
 	return pRegistry, nil
@@ -82,9 +87,7 @@ func (svr *polarisRegistry) Register(info *registry.Info) error {
 			param.Namespace, param.Service, param.Host)
 	}
 
-	ctx, _ := context.WithCancel(context.Background())
-
-	go svr.doHeartbeat(ctx, param)
+	go svr.doHeartbeat(param)
 
 	return nil
 }
@@ -110,7 +113,7 @@ func (pr *polarisRegistry) IsAvailable() bool {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
-func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
+func (svr *polarisRegistry) doHeartbeat(ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(5 * time.Second)
 
 	heartbeat := &api.InstanceHeartbeatRequest{
@@ -124,7 +127,7 @@ func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRe
 	}
 	for {
 		select {
-		case <-ctx.Done():
+		case <-svr.ctx.Done():
 			return
 		case <-ticker.C:
 			svr.provider.Heartbeat(heartbeat)

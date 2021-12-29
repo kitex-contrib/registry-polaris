@@ -52,7 +52,7 @@ func TestPolarisResolver(t *testing.T) {
 	err = rg.Register(&info)
 	require.Nil(t, err)
 	desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
-	time.Sleep(5 * time.Second) // wait register service
+	time.Sleep(15 * time.Second) // wait register service
 	result, err := rs.Resolve(context.TODO(), desc)
 	require.Nil(t, err)
 	expected := discovery.Result{
@@ -69,7 +69,7 @@ func TestPolarisResolver(t *testing.T) {
 	{
 		err = rg.Deregister(&info)
 		require.Nil(t, err)
-		time.Sleep(5 * time.Second) // wait deregister service
+		time.Sleep(15 * time.Second) // wait deregister service
 		desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
 		result, err = rs.Resolve(context.TODO(), desc)
 		require.NotNil(t, err)
