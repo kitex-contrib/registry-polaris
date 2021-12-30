@@ -29,7 +29,7 @@ jobs:
         uses: crate-ci/typos@v1.2.1
 
       - name: Lint
-          run: |
+        run: |
             go vet -stdmethods=false $(go list ./...)
             go install mvdan.cc/gofumpt@latest
             test -z "$(gofumpt -l -w  .)" 
