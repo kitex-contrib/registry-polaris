@@ -46,7 +46,6 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 		ip, portStr, err := net.SplitHostPort(addr)
 		if err != nil {
 			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
-
 		}
 		port, _ := strconv.Atoi(portStr)
 		serverConfigs = append(serverConfigs, fmt.Sprintf("%s:%d", ip, uint64(port)))
@@ -71,7 +70,6 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 }
 
 func mergePolarisConfiguration(easy, complexConf config.Configuration) {
-
 	easySvrList := easy.GetGlobal().GetServerConnector().GetAddresses()
 
 	complexSvrList := complexConf.GetGlobal().GetServerConnector().GetAddresses()

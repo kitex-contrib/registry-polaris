@@ -56,7 +56,6 @@ type polarisRegistry struct {
 
 // NewPolarisRegistry creates a polaris based registry.
 func NewPolarisRegistry(endpoints []string) (Registry, error) {
-
 	sdkCtx, err := GetPolarisConfig(endpoints)
 	if err != nil {
 		return &polarisRegistry{}, err
@@ -104,7 +103,6 @@ func (svr *polarisRegistry) Deregister(info *registry.Info) error {
 		return perrors.WithMessagef(err, "register(err:%+v)", err)
 	}
 	return nil
-
 }
 
 // IsAvailable always return true when use polaris.

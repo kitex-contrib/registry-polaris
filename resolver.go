@@ -55,9 +55,7 @@ type PolarisResolver struct {
 
 // NewPolarisResolver creates a polaris based resolver.
 func NewPolarisResolver(endpoints []string) (Resolver, error) {
-
 	sdkCtx, err := GetPolarisConfig(endpoints)
-
 	if err != nil {
 		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
 	}
@@ -129,7 +127,6 @@ func (polaris *PolarisResolver) Name() string {
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (polaris *PolarisResolver) doHeartbeat(ins *api.InstanceRegisterRequest) {
-
 	ticker := time.NewTicker(5 * time.Second)
 
 	heartbeat := &api.InstanceHeartbeatRequest{

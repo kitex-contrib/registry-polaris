@@ -33,7 +33,6 @@ const (
 )
 
 func TestPolarisResolver(t *testing.T) {
-
 	rg, err := NewPolarisRegistry([]string{"127.0.0.1:8091"})
 	require.Nil(t, err)
 	rs, err := NewPolarisResolver([]string{"127.0.0.1:8091"})
@@ -77,8 +76,6 @@ func TestPolarisResolver(t *testing.T) {
 }
 
 func TestEmptyEndpoints(t *testing.T) {
-
 	_, err := NewPolarisResolver([]string{})
 	require.NotNil(t, err)
-
 }
