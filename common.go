@@ -18,6 +18,7 @@ package polaris
 
 import (
 	"fmt"
+	"github.com/cloudwego/kitex/pkg/discovery"
 	"net"
 	"strconv"
 
@@ -92,4 +93,15 @@ func mergePolarisConfiguration(easy, complexConf config.Configuration) {
 	}
 
 	complexConf.GetGlobal().GetServerConnector().SetAddresses(finalSvrList)
+}
+
+func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) (discovery.Instance) {
+	weight := PolarisInstance.GetWeight()
+	if weight <= 0 {
+		weight = defaultWeight
+	}
+	addr := PolarisInstance.GetHost() + ":" + strconv.Itoa(int(PolarisInstance.GetPort()))
+	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, nil)
+	// In KitexInstance , tags can be used as IDC、Cluster、Env and so on.
+	return KitexInstance
 }

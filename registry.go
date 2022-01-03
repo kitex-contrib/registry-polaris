@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/cloudwego/kitex/pkg/registry"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
@@ -43,7 +43,6 @@ type Registry interface {
 
 	doHeartbeat(ins *api.InstanceRegisterRequest)
 
-	// todo add watch
 }
 
 // polarisRegistry is a registry using etcd.
@@ -82,7 +81,7 @@ func (svr *polarisRegistry) Register(info *registry.Info) error {
 		return err
 	}
 	if resp.Existed {
-		klog.Warnf("instance already registered, namespace:%s, service:%s, port:%s",
+		log.GetBaseLogger().Warnf("instance already registered, namespace:%s, service:%s, port:%s",
 			param.Namespace, param.Service, param.Host)
 	}
 

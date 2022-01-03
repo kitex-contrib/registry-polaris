@@ -19,14 +19,13 @@ package polaris
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
-	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
+	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
@@ -41,7 +40,7 @@ type Resolver interface {
 
 	doHeartbeat(ins *api.InstanceRegisterRequest)
 
-	// todo add watch
+	Watcher(ctx context.Context, desc string) (discovery.Change,error)
 }
 
 // PolarisResolver is a resolver using polaris.
@@ -78,35 +77,93 @@ func (polaris *PolarisResolver) Target(ctx context.Context, target rpcinfo.Endpo
 	return target.ServiceName()
 }
 
+// Watcher return registered service changes
+func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (discovery.Change, error) {
+	var eps  []discovery.Instance
+	var add  []discovery.Instance
+	var update  []discovery.Instance
+	var remove  []discovery.Instance
+
+	key := model.ServiceKey{
+		Namespace: PolarisDefaultNamespace,
+		Service:   desc,
+	}
+	watchReq := api.WatchServiceRequest{}
+	watchReq.Key = key
+	watchRsp, err := polaris.consumer.WatchService(&watchReq)
+	if nil != err {
+		log.GetBaseLogger().Fatalf("fail to WatchService, err is %v", err)
+	}
+	instances := watchRsp.GetAllInstancesResp.Instances
+
+	if nil != instances {
+		for _, instance := range instances {
+			log.GetBaseLogger().Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
+			eps = append(eps,ChangePolarisInstanceToKitx(instance))
+		}
+	}
+
+	result:=discovery.Result{
+		Cacheable: true,
+		CacheKey:  desc,
+		Instances: eps,
+	}
+	Change:=discovery.Change{}
+
+	select {
+	case <-ctx.Done():
+		return Change,nil
+	case event := <-watchRsp.EventChannel:
+		eType := event.GetSubScribeEventType()
+		if eType == api.EventInstance {
+			insEvent := event.(*model.InstanceEvent)
+			if insEvent.AddEvent != nil {
+				for _, instance := range insEvent.AddEvent.Instances {
+					add = append(add, ChangePolarisInstanceToKitx(instance))
+				}
+			}
+			if insEvent.UpdateEvent != nil {
+				for i := range insEvent.UpdateEvent.UpdateList {
+					update = append(update, ChangePolarisInstanceToKitx(insEvent.UpdateEvent.UpdateList[i].After))
+				}
+			}
+			if insEvent.DeleteEvent != nil {
+				for _, instance := range insEvent.DeleteEvent.Instances {
+					remove = append(remove, ChangePolarisInstanceToKitx(instance))
+				}
+			}
+			Change =discovery.Change{
+				Result: result,
+				Added:   add,
+				Updated: update,
+				Removed: remove,
+			}
+		}
+	}
+	return Change,nil
+}
+
 // Resolve implements the Resolver interface.
 func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (discovery.Result, error) {
-	var (
-		info instanceInfo
-		eps  []discovery.Instance
-	)
+	var eps  []discovery.Instance
 
 	getInstances := &api.GetInstancesRequest{}
 	getInstances.Namespace = PolarisDefaultNamespace
 	getInstances.Service = desc
 	InstanceResp, err := polaris.consumer.GetInstances(getInstances)
 	if nil != err {
-		klog.Fatalf("fail to getOneInstance, err is %v", err)
+		log.GetBaseLogger().Fatalf("fail to getOneInstance, err is %v", err)
 	}
 	instances := InstanceResp.GetInstances()
 	if nil != instances {
 		for _, instance := range instances {
-			klog.Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
-			weight := instance.GetWeight()
-			if weight <= 0 {
-				weight = defaultWeight
-			}
-			addr := instance.GetHost() + ":" + strconv.Itoa(int(instance.GetPort()))
-			eps = append(eps, discovery.NewInstance(instance.GetProtocol(), addr, weight, info.Tags))
+			log.GetBaseLogger().Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
+			eps = append(eps, ChangePolarisInstanceToKitx(instance))
 		}
 	}
 
 	if len(eps) == 0 {
-		return discovery.Result{}, fmt.Errorf("no instance remains for %v", desc)
+		return discovery.Result{}, fmt.Errorf("no instance remains for %s", desc)
 	}
 	return discovery.Result{
 		Cacheable: true,
@@ -147,3 +204,9 @@ func (polaris *PolarisResolver) doHeartbeat(ins *api.InstanceRegisterRequest) {
 		}
 	}
 }
+
+// Close closes the resolver.
+func (polaris *PolarisResolver) Close() {
+	polaris.cancelFunc()
+}
+

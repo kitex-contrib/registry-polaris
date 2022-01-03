@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	serviceName = "Hello"
+	serviceName = "registry-polaris"
 )
 
 func TestPolarisResolver(t *testing.T) {
@@ -38,41 +38,58 @@ func TestPolarisResolver(t *testing.T) {
 	rs, err := NewPolarisResolver([]string{"127.0.0.1:8091"})
 	require.Nil(t, err)
 
-	var tagmap map[string]string
-	info := registry.Info{
-		ServiceName: serviceName,
-		Addr:        utils.NewNetAddr("tcp", "127.0.0.1:8888"),
-		Weight:      100,
-		Tags:        tagmap,
-	}
-
 	// test register service
-
-	err = rg.Register(&info)
+	info0 := &registry.Info{
+		ServiceName: serviceName,
+		Addr:        utils.NewNetAddr("tcp", "127.0.0.1:6666"),
+		Weight:      100,
+		Tags:        nil,
+	}
+	err = rg.Register(info0)
 	require.Nil(t, err)
+	time.Sleep(15 * time.Second)     // wait register service
 	desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
-	time.Sleep(15 * time.Second) // wait register service
 	result, err := rs.Resolve(context.TODO(), desc)
 	require.Nil(t, err)
 	expected := discovery.Result{
 		Cacheable: true,
 		CacheKey:  serviceName,
 		Instances: []discovery.Instance{
-			discovery.NewInstance(info.Addr.Network(), info.Addr.String(), info.Weight, info.Tags),
+			discovery.NewInstance(info0.Addr.Network(), info0.Addr.String(), info0.Weight, info0.Tags),
 		},
 	}
 	require.Equal(t, expected, result)
+	Wathcherchange, err := rs.Watcher(context.TODO(), desc)
+	t.Logf("the number of instance is %d",len(Wathcherchange.Result.Instances))
+
+	// test register service
+	info1 := &registry.Info{
+		ServiceName: serviceName,
+		Addr:        utils.NewNetAddr("tcp", "127.0.0.1:7777"),
+		Weight:      100,
+		Tags:        nil,
+	}
+	err = rg.Register(info1)
+	require.Nil(t, err)
+	time.Sleep(15 * time.Second)   // wait register service
+	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	t.Logf("the number of instance is %d",len(Wathcherchange.Result.Instances))
+	result, err = rs.Resolve(context.TODO(), desc)
+	require.Nil(t, err)
 
 	// test deregister service
 
-	{
-		err = rg.Deregister(&info)
-		require.Nil(t, err)
-		time.Sleep(15 * time.Second) // wait deregister service
-		desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
-		result, err = rs.Resolve(context.TODO(), desc)
-		require.NotNil(t, err)
-	}
+	err = rg.Deregister(info0)
+	require.Nil(t, err)
+	err = rg.Deregister(info1)
+	require.Nil(t, err)
+	time.Sleep(15 * time.Second)    // wait deregister service
+	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	t.Logf("the number of instance is %d",len(Wathcherchange.Result.Instances))
+	desc = rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
+	result, err = rs.Resolve(context.TODO(), desc)
+	require.NotNil(t, err)
+
 }
 
 func TestEmptyEndpoints(t *testing.T) {
