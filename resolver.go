@@ -19,7 +19,6 @@ package polaris
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
@@ -38,9 +37,7 @@ const (
 type Resolver interface {
 	discovery.Resolver
 
-	doHeartbeat(ins *api.InstanceRegisterRequest)
-
-	Watcher(ctx context.Context, desc string) (discovery.Change,error)
+	Watcher(ctx context.Context, desc string) (discovery.Change, error)
 }
 
 // PolarisResolver is a resolver using polaris.
@@ -79,10 +76,10 @@ func (polaris *PolarisResolver) Target(ctx context.Context, target rpcinfo.Endpo
 
 // Watcher return registered service changes
 func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (discovery.Change, error) {
-	var eps  []discovery.Instance
-	var add  []discovery.Instance
-	var update  []discovery.Instance
-	var remove  []discovery.Instance
+	var eps []discovery.Instance
+	var add []discovery.Instance
+	var update []discovery.Instance
+	var remove []discovery.Instance
 
 	key := model.ServiceKey{
 		Namespace: PolarisDefaultNamespace,
@@ -99,20 +96,20 @@ func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (disco
 	if nil != instances {
 		for _, instance := range instances {
 			log.GetBaseLogger().Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
-			eps = append(eps,ChangePolarisInstanceToKitx(instance))
+			eps = append(eps, ChangePolarisInstanceToKitx(instance))
 		}
 	}
 
-	result:=discovery.Result{
+	result := discovery.Result{
 		Cacheable: true,
 		CacheKey:  desc,
 		Instances: eps,
 	}
-	Change:=discovery.Change{}
+	Change := discovery.Change{}
 
 	select {
 	case <-ctx.Done():
-		return Change,nil
+		return Change, nil
 	case event := <-watchRsp.EventChannel:
 		eType := event.GetSubScribeEventType()
 		if eType == api.EventInstance {
@@ -132,20 +129,20 @@ func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (disco
 					remove = append(remove, ChangePolarisInstanceToKitx(instance))
 				}
 			}
-			Change =discovery.Change{
-				Result: result,
+			Change = discovery.Change{
+				Result:  result,
 				Added:   add,
 				Updated: update,
 				Removed: remove,
 			}
 		}
 	}
-	return Change,nil
+	return Change, nil
 }
 
 // Resolve implements the Resolver interface.
 func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (discovery.Result, error) {
-	var eps  []discovery.Instance
+	var eps []discovery.Instance
 
 	getInstances := &api.GetInstancesRequest{}
 	getInstances.Namespace = PolarisDefaultNamespace
@@ -182,31 +179,7 @@ func (polaris *PolarisResolver) Name() string {
 	return "Polaris"
 }
 
-// doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
-func (polaris *PolarisResolver) doHeartbeat(ins *api.InstanceRegisterRequest) {
-	ticker := time.NewTicker(5 * time.Second)
-
-	heartbeat := &api.InstanceHeartbeatRequest{
-		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
-			Service:   ins.Service,
-			Namespace: ins.Namespace,
-			Host:      ins.Host,
-			Port:      ins.Port,
-		},
-	}
-
-	for {
-		select {
-		case <-polaris.ctx.Done():
-			return
-		case <-ticker.C:
-			polaris.provider.Heartbeat(heartbeat)
-		}
-	}
-}
-
 // Close closes the resolver.
 func (polaris *PolarisResolver) Close() {
 	polaris.cancelFunc()
 }
-

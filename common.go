@@ -18,10 +18,10 @@ package polaris
 
 import (
 	"fmt"
-	"github.com/cloudwego/kitex/pkg/discovery"
 	"net"
 	"strconv"
 
+	"github.com/cloudwego/kitex/pkg/discovery"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
@@ -95,7 +95,7 @@ func mergePolarisConfiguration(easy, complexConf config.Configuration) {
 	complexConf.GetGlobal().GetServerConnector().SetAddresses(finalSvrList)
 }
 
-func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) (discovery.Instance) {
+func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Instance {
 	weight := PolarisInstance.GetWeight()
 	if weight <= 0 {
 		weight = defaultWeight

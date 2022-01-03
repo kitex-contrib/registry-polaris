@@ -23,10 +23,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/cloudwego/kitex/pkg/registry"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
+	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
@@ -42,7 +42,6 @@ type Registry interface {
 	registry.Registry
 
 	doHeartbeat(ins *api.InstanceRegisterRequest)
-
 }
 
 // polarisRegistry is a registry using etcd.
@@ -158,12 +157,11 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 			Port:      Instanceport,
 			Protocol:  &protocolForKitex,
 			Timeout:   model.ToDurationPtr(registerTimeout),
+			TTL:       &defaultHeartbeatIntervalSec,
+			// If the TTL field is not set, polaris will think that this instance does not need to perform the heartbeat health check operation,
+			// then after the instance goes offline, the instance cannot be converted to unhealthy normally.
 		},
 	}
-
-	req.SetTTL(defaultHeartbeatIntervalSec)
-	// If the TTL field is not set, polaris will think that this instance does not need to perform the heartbeat health check operation,
-	// then after the instance goes offline, the instance cannot be converted to unhealthy normally.
 
 	return req
 }
