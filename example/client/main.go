@@ -32,7 +32,7 @@ const (
 )
 
 func main() {
-	polarisAddresses,error:=polaris.LoadpolarisAddress(confpath)
+	polarisAddresses, error := polaris.LoadpolarisAddress(confpath)
 	if error != nil {
 		log.Fatal(error)
 	}

@@ -98,14 +98,14 @@ func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Insta
 	return KitexInstance
 }
 
-func LoadpolarisAddress(confpath string) ([]string,error) {
+func LoadpolarisAddress(confpath string) ([]string, error) {
 	var polarisaddresses []string
 	if confpath != "" && model.IsFile(confpath) {
 		Conf, err := config.LoadConfigurationByFile(confpath)
 		if err != nil {
 			return polarisaddresses, err
 		}
-		polarisaddresses =Conf.Global.ServerConnector.Addresses
+		polarisaddresses = Conf.Global.ServerConnector.Addresses
 	}
-	return polarisaddresses ,nil
+	return polarisaddresses, nil
 }
