@@ -27,15 +27,23 @@ import (
 	polaris "github.com/kitex-contrib/registry-polaris"
 )
 
+const (
+	confpath = "polaris.yaml"
+)
+
 func main() {
-	r, err := polaris.NewPolarisResolver([]string{"127.0.0.1:8091"})
+	polarisAddresses,error:=polaris.LoadpolarisAddress(confpath)
+	if error != nil {
+		log.Fatal(error)
+	}
+	r, err := polaris.NewPolarisResolver(polarisAddresses)
 	if err != nil {
 		log.Fatal(err)
 	}
-	client := hello.MustNewClient("golang", client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
+	newClient := hello.MustNewClient("golang", client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
-		resp, err := client.Echo(ctx, &api.Request{Message: "Hi,polaris!"})
+		resp, err := newClient.Echo(ctx, &api.Request{Message: "Hi,polaris!"})
 		cancel()
 		if err != nil {
 			log.Fatal(err)

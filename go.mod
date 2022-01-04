@@ -1,6 +1,6 @@
 module github.com/kitex-contrib/registry-polaris
 
-go 1.16
+go 1.15
 
 require (
 	github.com/cloudwego/kitex v0.1.3

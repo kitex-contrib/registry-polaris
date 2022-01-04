@@ -60,6 +60,7 @@ func TestPolarisResolver(t *testing.T) {
 	}
 	require.Equal(t, expected, result)
 	Wathcherchange, err := rs.Watcher(context.TODO(), desc)
+	require.Nil(t, err)
 	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
 
 	// test register service
@@ -73,6 +74,7 @@ func TestPolarisResolver(t *testing.T) {
 	require.Nil(t, err)
 	time.Sleep(15 * time.Second) // wait register service
 	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	require.Nil(t, err)
 	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
 	result, err = rs.Resolve(context.TODO(), desc)
 	require.Nil(t, err)
@@ -85,6 +87,7 @@ func TestPolarisResolver(t *testing.T) {
 	require.Nil(t, err)
 	time.Sleep(15 * time.Second) // wait deregister service
 	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	require.Nil(t, err)
 	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
 	desc = rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
 	result, err = rs.Resolve(context.TODO(), desc)

@@ -28,14 +28,6 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
-// instanceInfo used to stored service basic info in polaris.
-type instanceInfo struct {
-	Network string            `json:"network"`
-	Address string            `json:"address"`
-	Weight  int               `json:"weight"`
-	Tags    map[string]string `json:"tags"`
-}
-
 // GetPolarisConfig get polaris config from endpoints
 func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	if len(endpoints) == 0 {
@@ -104,4 +96,16 @@ func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Insta
 	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, nil)
 	// In KitexInstance , tags can be used as IDC、Cluster、Env and so on.
 	return KitexInstance
+}
+
+func LoadpolarisAddress(confpath string) ([]string,error) {
+	var polarisaddresses []string
+	if confpath != "" && model.IsFile(confpath) {
+		Conf, err := config.LoadConfigurationByFile(confpath)
+		if err != nil {
+			return polarisaddresses, err
+		}
+		polarisaddresses =Conf.Global.ServerConnector.Addresses
+	}
+	return polarisaddresses ,nil
 }

@@ -35,6 +35,7 @@ var (
 	defaultHeartbeatIntervalSec = 5
 	registerTimeout             = 10 * time.Second
 	heartbeatTimeout            = 5 * time.Second
+	heartbeatTime               = 5 * time.Second
 )
 
 // Registry is extension interface of Kitex Registry.
@@ -104,13 +105,13 @@ func (svr *polarisRegistry) Deregister(info *registry.Info) error {
 }
 
 // IsAvailable always return true when use polaris.
-func (pr *polarisRegistry) IsAvailable() bool {
+func (svr *polarisRegistry) IsAvailable() bool {
 	return true
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
 func (svr *polarisRegistry) doHeartbeat(ins *api.InstanceRegisterRequest) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(heartbeatTime)
 
 	heartbeat := &api.InstanceHeartbeatRequest{
 		InstanceHeartbeatRequest: model.InstanceHeartbeatRequest{
