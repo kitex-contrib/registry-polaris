@@ -28,6 +28,8 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
+const confPath = "polaris.yaml"
+
 // GetPolarisConfig get polaris config from endpoints
 func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	if len(endpoints) == 0 {
@@ -46,7 +48,6 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 
 	polarisConf := config.NewDefaultConfiguration(serverConfigs)
 
-	confPath := "polaris.yaml"
 	if confPath != "" && model.IsFile(confPath) {
 		complexConf, err := config.LoadConfigurationByFile(confPath)
 		if err != nil {
@@ -98,14 +99,14 @@ func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Insta
 	return KitexInstance
 }
 
-func LoadpolarisAddress(confpath string) ([]string, error) {
-	var polarisaddresses []string
+func LoadPolarisAddress(confpath string) ([]string, error) {
+	var polarisAddresses []string
 	if confpath != "" && model.IsFile(confpath) {
 		Conf, err := config.LoadConfigurationByFile(confpath)
 		if err != nil {
-			return polarisaddresses, err
+			return polarisAddresses, err
 		}
-		polarisaddresses = Conf.Global.ServerConnector.Addresses
+		polarisAddresses = Conf.Global.ServerConnector.Addresses
 	}
-	return polarisaddresses, nil
+	return polarisAddresses, nil
 }

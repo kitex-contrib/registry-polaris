@@ -27,12 +27,10 @@ import (
 	polaris "github.com/kitex-contrib/registry-polaris"
 )
 
-const (
-	confpath = "polaris.yaml"
-)
+const confPath = "polaris.yaml"
 
 func main() {
-	polarisAddresses, error := polaris.LoadpolarisAddress(confpath)
+	polarisAddresses, error := polaris.LoadPolarisAddress(confPath)
 	if error != nil {
 		log.Fatal(error)
 	}

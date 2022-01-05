@@ -45,7 +45,7 @@ type Registry interface {
 	doHeartbeat(ins *api.InstanceRegisterRequest)
 }
 
-// polarisRegistry is a registry using etcd.
+// polarisRegistry is a registry using polaris.
 type polarisRegistry struct {
 	consumer   api.ConsumerAPI
 	provider   api.ProviderAPI
@@ -153,7 +153,7 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:   info.ServiceName,
-			Namespace: PolarisDefaultNamespace,
+			Namespace: polarisDefaultNamespace,
 			Host:      host,
 			Port:      Instanceport,
 			Protocol:  &protocolForKitex,
@@ -178,7 +178,7 @@ func createDeregisterParam(info *registry.Info) *api.InstanceDeRegisterRequest {
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
 			Service:   info.ServiceName,
-			Namespace: PolarisDefaultNamespace,
+			Namespace: polarisDefaultNamespace,
 			Host:      host,
 			Port:      Instanceport,
 		},

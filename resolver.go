@@ -30,7 +30,7 @@ import (
 
 const (
 	defaultWeight           = 10
-	PolarisDefaultNamespace = "default"
+	polarisDefaultNamespace = "default"
 )
 
 // Resolver is extension interface of Kitex Resolver.
@@ -40,8 +40,8 @@ type Resolver interface {
 	Watcher(ctx context.Context, desc string) (discovery.Change, error)
 }
 
-// PolarisResolver is a resolver using polaris.
-type PolarisResolver struct {
+// polarisResolver is a resolver using polaris.
+type polarisResolver struct {
 	namespace  string
 	provider   api.ProviderAPI
 	consumer   api.ConsumerAPI
@@ -49,7 +49,7 @@ type PolarisResolver struct {
 	cancelFunc context.CancelFunc
 }
 
-// NewPolarisResolver creates a polaris based resolver.
+// NewpolarisResolver creates a polaris based resolver.
 func NewPolarisResolver(endpoints []string) (Resolver, error) {
 	sdkCtx, err := GetPolarisConfig(endpoints)
 	if err != nil {
@@ -58,8 +58,8 @@ func NewPolarisResolver(endpoints []string) (Resolver, error) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	newInstance := &PolarisResolver{
-		namespace:  PolarisDefaultNamespace,
+	newInstance := &polarisResolver{
+		namespace:  polarisDefaultNamespace,
 		consumer:   api.NewConsumerAPIByContext(sdkCtx),
 		provider:   api.NewProviderAPIByContext(sdkCtx),
 		ctx:        ctx,
@@ -70,19 +70,21 @@ func NewPolarisResolver(endpoints []string) (Resolver, error) {
 }
 
 // Target implements the Resolver interface.
-func (polaris *PolarisResolver) Target(ctx context.Context, target rpcinfo.EndpointInfo) (description string) {
+func (polaris *polarisResolver) Target(ctx context.Context, target rpcinfo.EndpointInfo) (description string) {
 	return target.ServiceName()
 }
 
 // Watcher return registered service changes
-func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (discovery.Change, error) {
-	var eps []discovery.Instance
-	var add []discovery.Instance
-	var update []discovery.Instance
-	var remove []discovery.Instance
+func (polaris *polarisResolver) Watcher(ctx context.Context, desc string) (discovery.Change, error) {
+	var (
+		eps    []discovery.Instance
+		add    []discovery.Instance
+		update []discovery.Instance
+		remove []discovery.Instance
+	)
 
 	key := model.ServiceKey{
-		Namespace: PolarisDefaultNamespace,
+		Namespace: polarisDefaultNamespace,
 		Service:   desc,
 	}
 	watchReq := api.WatchServiceRequest{}
@@ -141,11 +143,11 @@ func (polaris *PolarisResolver) Watcher(ctx context.Context, desc string) (disco
 }
 
 // Resolve implements the Resolver interface.
-func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (discovery.Result, error) {
+func (polaris *polarisResolver) Resolve(ctx context.Context, desc string) (discovery.Result, error) {
 	var eps []discovery.Instance
 
 	getInstances := &api.GetInstancesRequest{}
-	getInstances.Namespace = PolarisDefaultNamespace
+	getInstances.Namespace = polarisDefaultNamespace
 	getInstances.Service = desc
 	InstanceResp, err := polaris.consumer.GetInstances(getInstances)
 	if nil != err {
@@ -170,16 +172,16 @@ func (polaris *PolarisResolver) Resolve(ctx context.Context, desc string) (disco
 }
 
 // Diff implements the Resolver interface.
-func (polaris *PolarisResolver) Diff(cacheKey string, prev, next discovery.Result) (discovery.Change, bool) {
+func (polaris *polarisResolver) Diff(cacheKey string, prev, next discovery.Result) (discovery.Change, bool) {
 	return discovery.DefaultDiff(cacheKey, prev, next)
 }
 
 // Name implements the Resolver interface.
-func (polaris *PolarisResolver) Name() string {
+func (polaris *polarisResolver) Name() string {
 	return "Polaris"
 }
 
 // Close closes the resolver.
-func (polaris *PolarisResolver) Close() {
+func (polaris *polarisResolver) Close() {
 	polaris.cancelFunc()
 }
