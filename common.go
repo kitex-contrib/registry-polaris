@@ -88,7 +88,7 @@ func mergePolarisConfiguration(easy, complexConf config.Configuration) {
 	complexConf.GetGlobal().GetServerConnector().SetAddresses(finalSvrList)
 }
 
-func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Instance {
+func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Instance {
 	weight := PolarisInstance.GetWeight()
 	if weight <= 0 {
 		weight = defaultWeight
@@ -99,10 +99,10 @@ func ChangePolarisInstanceToKitx(PolarisInstance model.Instance) discovery.Insta
 	return KitexInstance
 }
 
-func LoadPolarisAddress(confpath string) ([]string, error) {
+func LoadPolarisAddress(confPath string) ([]string, error) {
 	var polarisAddresses []string
-	if confpath != "" && model.IsFile(confpath) {
-		Conf, err := config.LoadConfigurationByFile(confpath)
+	if confPath != "" && model.IsFile(confPath) {
+		Conf, err := config.LoadConfigurationByFile(confPath)
 		if err != nil {
 			return polarisAddresses, err
 		}

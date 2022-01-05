@@ -38,7 +38,7 @@ var (
 	heartbeatTime               = 5 * time.Second
 )
 
-// Registry is extension interface of Kitex Registry.
+// Registry is extension interface of Kitex registry.Registry.
 type Registry interface {
 	registry.Registry
 
@@ -148,14 +148,14 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 	if err != nil {
 		return nil
 	}
-	Instanceport, _ := strconv.Atoi(port)
+	InstancepPort, _ := strconv.Atoi(port)
 
 	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:   info.ServiceName,
 			Namespace: polarisDefaultNamespace,
 			Host:      host,
-			Port:      Instanceport,
+			Port:      InstancepPort,
 			Protocol:  &protocolForKitex,
 			Timeout:   model.ToDurationPtr(registerTimeout),
 			TTL:       &defaultHeartbeatIntervalSec,
@@ -173,14 +173,14 @@ func createDeregisterParam(info *registry.Info) *api.InstanceDeRegisterRequest {
 	if err != nil {
 		return nil
 	}
-	Instanceport, _ := strconv.Atoi(port)
+	InstancePort, _ := strconv.Atoi(port)
 
 	return &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
 			Service:   info.ServiceName,
 			Namespace: polarisDefaultNamespace,
 			Host:      host,
-			Port:      Instanceport,
+			Port:      InstancePort,
 		},
 	}
 }

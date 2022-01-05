@@ -33,7 +33,7 @@ const (
 	polarisDefaultNamespace = "default"
 )
 
-// Resolver is extension interface of Kitex Resolver.
+// Resolver is extension interface of Kitex discovery.Resolver.
 type Resolver interface {
 	discovery.Resolver
 
@@ -49,7 +49,7 @@ type polarisResolver struct {
 	cancelFunc context.CancelFunc
 }
 
-// NewpolarisResolver creates a polaris based resolver.
+// NewPolarisResolver creates a polaris based resolver.
 func NewPolarisResolver(endpoints []string) (Resolver, error) {
 	sdkCtx, err := GetPolarisConfig(endpoints)
 	if err != nil {
@@ -98,7 +98,7 @@ func (polaris *polarisResolver) Watcher(ctx context.Context, desc string) (disco
 	if nil != instances {
 		for _, instance := range instances {
 			log.GetBaseLogger().Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
-			eps = append(eps, ChangePolarisInstanceToKitx(instance))
+			eps = append(eps, ChangePolarisInstanceToKitex(instance))
 		}
 	}
 
@@ -118,17 +118,17 @@ func (polaris *polarisResolver) Watcher(ctx context.Context, desc string) (disco
 			insEvent := event.(*model.InstanceEvent)
 			if insEvent.AddEvent != nil {
 				for _, instance := range insEvent.AddEvent.Instances {
-					add = append(add, ChangePolarisInstanceToKitx(instance))
+					add = append(add, ChangePolarisInstanceToKitex(instance))
 				}
 			}
 			if insEvent.UpdateEvent != nil {
 				for i := range insEvent.UpdateEvent.UpdateList {
-					update = append(update, ChangePolarisInstanceToKitx(insEvent.UpdateEvent.UpdateList[i].After))
+					update = append(update, ChangePolarisInstanceToKitex(insEvent.UpdateEvent.UpdateList[i].After))
 				}
 			}
 			if insEvent.DeleteEvent != nil {
 				for _, instance := range insEvent.DeleteEvent.Instances {
-					remove = append(remove, ChangePolarisInstanceToKitx(instance))
+					remove = append(remove, ChangePolarisInstanceToKitex(instance))
 				}
 			}
 			Change = discovery.Change{
@@ -157,7 +157,7 @@ func (polaris *polarisResolver) Resolve(ctx context.Context, desc string) (disco
 	if nil != instances {
 		for _, instance := range instances {
 			log.GetBaseLogger().Infof("instance getOneInstance is %s:%d", instance.GetHost(), instance.GetPort())
-			eps = append(eps, ChangePolarisInstanceToKitx(instance))
+			eps = append(eps, ChangePolarisInstanceToKitex(instance))
 		}
 	}
 
