@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	newClient := hello.MustNewClient("golang", client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
+	newClient := hello.MustNewClient("echo", client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 		resp, err := newClient.Echo(ctx, &api.Request{Message: "Hi,polaris!"})

@@ -49,7 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 	newServer := hello.NewServer(new(HelloImpl), server.WithRegistry(r), server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
-		ServiceName: "golang",
+		ServiceName: "echo",
 	}), server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8888}))
 
 	err = newServer.Run()
