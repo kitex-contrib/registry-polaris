@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	serviceName = "registry-polaris"
+	serviceName = "registry-test"
 )
 
 func TestPolarisResolver(t *testing.T) {
@@ -39,57 +39,59 @@ func TestPolarisResolver(t *testing.T) {
 	require.Nil(t, err)
 
 	// test register service
-	info0 := &registry.Info{
+	InstanceOne := &registry.Info{
 		ServiceName: serviceName,
 		Addr:        utils.NewNetAddr("tcp", "127.0.0.1:6666"),
 		Weight:      100,
-		Tags:        nil,
+		Tags:        nil, // when Tags is nil the namespace is default
 	}
-	err = rg.Register(info0)
+	err = rg.Register(InstanceOne)
 	require.Nil(t, err)
-	time.Sleep(15 * time.Second) // wait register service
-	desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
+	time.Sleep(15 * time.Second)                                                          // wait register service
+	desc := rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil)) // the namespace is default
 	result, err := rs.Resolve(context.TODO(), desc)
 	require.Nil(t, err)
 	expected := discovery.Result{
 		Cacheable: true,
-		CacheKey:  serviceName,
+		CacheKey:  polarisDefaultNamespace + ":" + serviceName,
 		Instances: []discovery.Instance{
-			discovery.NewInstance(info0.Addr.Network(), info0.Addr.String(), info0.Weight, info0.Tags),
+			discovery.NewInstance(InstanceOne.Addr.Network(), InstanceOne.Addr.String(), InstanceOne.Weight, map[string]string{
+				"namespace": "default",
+			}),
 		},
 	}
 	require.Equal(t, expected, result)
-	Wathcherchange, err := rs.Watcher(context.TODO(), desc)
+	watcherChange, err := rs.Watcher(context.TODO(), desc)
 	require.Nil(t, err)
-	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
+	t.Logf("the number of instance is %d", len(watcherChange.Result.Instances))
 
 	// test register service
-	info1 := &registry.Info{
+	InstanceTwo := &registry.Info{
 		ServiceName: serviceName,
 		Addr:        utils.NewNetAddr("tcp", "127.0.0.1:7777"),
 		Weight:      100,
-		Tags:        nil,
+		Tags:        nil, // namespace is default
 	}
-	err = rg.Register(info1)
+	err = rg.Register(InstanceTwo)
 	require.Nil(t, err)
 	time.Sleep(15 * time.Second) // wait register service
-	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	watcherChange, err = rs.Watcher(context.TODO(), desc)
 	require.Nil(t, err)
-	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
+	t.Logf("the number of instance is %d", len(watcherChange.Result.Instances))
 	result, err = rs.Resolve(context.TODO(), desc)
 	require.Nil(t, err)
 
 	// test deregister service
 
-	err = rg.Deregister(info0)
+	err = rg.Deregister(InstanceOne) // deregister InstanceOne
 	require.Nil(t, err)
-	err = rg.Deregister(info1)
+	err = rg.Deregister(InstanceTwo) // deregister InstanceTwo
 	require.Nil(t, err)
 	time.Sleep(15 * time.Second) // wait deregister service
-	Wathcherchange, err = rs.Watcher(context.TODO(), desc)
+	watcherChange, err = rs.Watcher(context.TODO(), desc)
 	require.Nil(t, err)
-	t.Logf("the number of instance is %d", len(Wathcherchange.Result.Instances))
-	desc = rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil))
+	t.Logf("the number of instance is %d", len(watcherChange.Result.Instances))
+	desc = rs.Target(context.TODO(), rpcinfo.NewEndpointInfo(serviceName, "", nil, nil)) // namespace is  default
 	result, err = rs.Resolve(context.TODO(), desc)
 	require.NotNil(t, err)
 }

@@ -21,6 +21,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/polarismesh/polaris-go/pkg/config"
+
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
 	"github.com/cloudwego/kitex/client"
@@ -30,15 +32,19 @@ import (
 const confPath = "polaris.yaml"
 
 func main() {
-	polarisAddresses, error := polaris.LoadPolarisAddress(confPath)
-	if error != nil {
-		log.Fatal(error)
+	Conf, err := config.LoadConfigurationByFile(confPath)
+	if err != nil {
+		log.Fatal(err)
 	}
+	polarisAddresses := Conf.Global.ServerConnector.Addresses
+	namespace := Conf.Consumer.ServicesSpecific[0].Namespace
+
 	r, err := polaris.NewPolarisResolver(polarisAddresses)
 	if err != nil {
 		log.Fatal(err)
 	}
-	newClient := hello.MustNewClient("echo", client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
+
+	newClient := hello.MustNewClient("echo", client.WithTag("namespace", namespace), client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 		resp, err := newClient.Echo(ctx, &api.Request{Message: "Hi,polaris!"})

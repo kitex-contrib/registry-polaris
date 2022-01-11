@@ -19,8 +19,8 @@ package polaris
 import (
 	"context"
 	"fmt"
-	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/registry"
@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	protocolForKitex            = "tcp"
 	defaultHeartbeatIntervalSec = 5
 	registerTimeout             = 10 * time.Second
 	heartbeatTimeout            = 5 * time.Second
@@ -42,15 +41,20 @@ var (
 type Registry interface {
 	registry.Registry
 
-	doHeartbeat(ins *api.InstanceRegisterRequest)
+	doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest)
+}
+
+type polarisHeartbeat struct {
+	cancel      context.CancelFunc
+	instanceKey string
 }
 
 // polarisRegistry is a registry using polaris.
 type polarisRegistry struct {
-	consumer   api.ConsumerAPI
-	provider   api.ProviderAPI
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	consumer    api.ConsumerAPI
+	provider    api.ProviderAPI
+	lock        *sync.RWMutex
+	registryIns map[string]*polarisHeartbeat
 }
 
 // NewPolarisRegistry creates a polaris based registry.
@@ -59,12 +63,11 @@ func NewPolarisRegistry(endpoints []string) (Registry, error) {
 	if err != nil {
 		return &polarisRegistry{}, err
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
 	pRegistry := &polarisRegistry{
-		consumer:   api.NewConsumerAPIByContext(sdkCtx),
-		provider:   api.NewProviderAPIByContext(sdkCtx),
-		ctx:        ctx,
-		cancelFunc: cancelFunc,
+		consumer:    api.NewConsumerAPIByContext(sdkCtx),
+		provider:    api.NewProviderAPIByContext(sdkCtx),
+		registryIns: make(map[string]*polarisHeartbeat),
+		lock:        &sync.RWMutex{},
 	}
 
 	return pRegistry, nil
@@ -72,10 +75,13 @@ func NewPolarisRegistry(endpoints []string) (Registry, error) {
 
 // Register registers a server with given registry info.
 func (svr *polarisRegistry) Register(info *registry.Info) error {
-	if err := validateRegistryInfo(info); err != nil {
+	if err := validateInfo(info); err != nil {
 		return err
 	}
-	param := createRegisterParam(info)
+	param, instanceKey, err := createRegisterParam(info)
+	if err != nil {
+		return err
+	}
 	resp, err := svr.provider.Register(param)
 	if err != nil {
 		return err
@@ -84,23 +90,43 @@ func (svr *polarisRegistry) Register(info *registry.Info) error {
 		log.GetBaseLogger().Warnf("instance already registered, namespace:%s, service:%s, port:%s",
 			param.Namespace, param.Service, param.Host)
 	}
-
-	go svr.doHeartbeat(param)
-
+	ctx, cancel := context.WithCancel(context.Background())
+	go svr.doHeartbeat(ctx, param)
+	svr.lock.Lock()
+	defer svr.lock.Unlock()
+	svr.registryIns[instanceKey] = &polarisHeartbeat{
+		instanceKey: instanceKey,
+		cancel:      cancel,
+	}
 	return nil
 }
 
 // Deregister deregisters a server with given registry info.
 func (svr *polarisRegistry) Deregister(info *registry.Info) error {
-	if info.ServiceName == "" {
-		return fmt.Errorf("missing service name in Deregister")
+	if err := validateInfo(info); err != nil {
+		return err
+	}
+	request, instanceKey, err := createDeregisterParam(info)
+	if err != nil {
+		return err
+	}
+	svr.lock.RLock()
+	insHeartbeat, ok := svr.registryIns[instanceKey]
+	svr.lock.RUnlock()
+	if !ok {
+		err = perrors.Errorf("instance{%s} has not registered", instanceKey)
+		return nil
+	}
+	err = svr.provider.Deregister(request)
+	if err != nil {
+		return perrors.WithMessagef(err, "instance{%s} deregister fail (err:%+v)", instanceKey, err)
+	} else {
+		svr.lock.Lock()
+		insHeartbeat.cancel()
+		delete(svr.registryIns, instanceKey)
+		svr.lock.Unlock()
 	}
 
-	request := createDeregisterParam(info)
-	err := svr.provider.Deregister(request)
-	if err != nil {
-		return perrors.WithMessagef(err, "register(err:%+v)", err)
-	}
 	return nil
 }
 
@@ -110,7 +136,7 @@ func (svr *polarisRegistry) IsAvailable() bool {
 }
 
 // doHeartbeat Since polaris does not support automatic reporting of instance heartbeats, separate logic is needed to implement it.
-func (svr *polarisRegistry) doHeartbeat(ins *api.InstanceRegisterRequest) {
+func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRegisterRequest) {
 	ticker := time.NewTicker(heartbeatTime)
 
 	heartbeat := &api.InstanceHeartbeatRequest{
@@ -124,7 +150,7 @@ func (svr *polarisRegistry) doHeartbeat(ins *api.InstanceRegisterRequest) {
 	}
 	for {
 		select {
-		case <-svr.ctx.Done():
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			svr.provider.Heartbeat(heartbeat)
@@ -132,31 +158,43 @@ func (svr *polarisRegistry) doHeartbeat(ins *api.InstanceRegisterRequest) {
 	}
 }
 
-func validateRegistryInfo(info *registry.Info) error {
+func validateInfo(info *registry.Info) error {
 	if info.ServiceName == "" {
 		return fmt.Errorf("missing service name in Register")
 	}
 	if info.Addr == nil {
-		return fmt.Errorf("missing addr in Register")
+		return fmt.Errorf("missing Addr in Register")
+	}
+	if len(info.Addr.Network()) == 0 {
+		return fmt.Errorf("registry.Info Addr Network() can not be empty")
+	}
+	if len(info.Addr.String()) == 0 {
+		return fmt.Errorf("registry.Info Addr String() can not be empty")
 	}
 	return nil
 }
 
 // createRegisterParam convert registry.Info to polaris instance register request.
-func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
-	host, port, err := net.SplitHostPort(info.Addr.String())
+func createRegisterParam(info *registry.Info) (*api.InstanceRegisterRequest, string, error) {
+	instanceHost, instancePort, err := GetInfoHostAndPort(info.Addr.String())
 	if err != nil {
-		return nil
+		return nil, "", err
 	}
-	InstancepPort, _ := strconv.Atoi(port)
+	protocol := info.Addr.Network()
+
+	namespace, ok := info.Tags["namespace"]
+	if !ok {
+		namespace = polarisDefaultNamespace
+	}
+	instanceKey := GetInstanceKey(namespace, info.ServiceName, instanceHost, strconv.Itoa(instancePort))
 
 	req := &api.InstanceRegisterRequest{
 		InstanceRegisterRequest: model.InstanceRegisterRequest{
 			Service:   info.ServiceName,
-			Namespace: polarisDefaultNamespace,
-			Host:      host,
-			Port:      InstancepPort,
-			Protocol:  &protocolForKitex,
+			Namespace: namespace,
+			Host:      instanceHost,
+			Port:      instancePort,
+			Protocol:  &protocol,
 			Timeout:   model.ToDurationPtr(registerTimeout),
 			TTL:       &defaultHeartbeatIntervalSec,
 			// If the TTL field is not set, polaris will think that this instance does not need to perform the heartbeat health check operation,
@@ -164,23 +202,29 @@ func createRegisterParam(info *registry.Info) *api.InstanceRegisterRequest {
 		},
 	}
 
-	return req
+	return req, instanceKey, nil
 }
 
 // createDeregisterParam convert registry.info to polaris instance deregister request.
-func createDeregisterParam(info *registry.Info) *api.InstanceDeRegisterRequest {
-	host, port, err := net.SplitHostPort(info.Addr.String())
+func createDeregisterParam(info *registry.Info) (*api.InstanceDeRegisterRequest, string, error) {
+	instanceHost, instancePort, err := GetInfoHostAndPort(info.Addr.String())
 	if err != nil {
-		return nil
+		return nil, "", err
 	}
-	InstancePort, _ := strconv.Atoi(port)
 
-	return &api.InstanceDeRegisterRequest{
+	namespace, ok := info.Tags["namespace"]
+	if !ok {
+		namespace = polarisDefaultNamespace
+	}
+
+	instanceKey := GetInstanceKey(namespace, info.ServiceName, instanceHost, strconv.Itoa(instancePort))
+	req := &api.InstanceDeRegisterRequest{
 		InstanceDeRegisterRequest: model.InstanceDeRegisterRequest{
 			Service:   info.ServiceName,
-			Namespace: polarisDefaultNamespace,
-			Host:      host,
-			Port:      InstancePort,
+			Namespace: namespace,
+			Host:      instanceHost,
+			Port:      instancePort,
 		},
 	}
+	return req, instanceKey, nil
 }

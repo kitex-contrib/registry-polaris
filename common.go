@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
 	perrors "github.com/pkg/errors"
@@ -27,8 +28,6 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/config"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
-
-const confPath = "polaris.yaml"
 
 // GetPolarisConfig get polaris config from endpoints
 func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
@@ -48,14 +47,6 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 
 	polarisConf := config.NewDefaultConfiguration(serverConfigs)
 
-	if confPath != "" && model.IsFile(confPath) {
-		complexConf, err := config.LoadConfigurationByFile(confPath)
-		if err != nil {
-			return nil, err
-		}
-		mergePolarisConfiguration(polarisConf, complexConf)
-		polarisConf = complexConf
-	}
 	sdkCtx, err := api.InitContextByConfig(polarisConf)
 	if err != nil {
 		return nil, err
@@ -63,29 +54,10 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	return sdkCtx, nil
 }
 
-func mergePolarisConfiguration(easy, complexConf config.Configuration) {
-	easySvrList := easy.GetGlobal().GetServerConnector().GetAddresses()
-
-	complexSvrList := complexConf.GetGlobal().GetServerConnector().GetAddresses()
-
-	result := make(map[string]bool)
-
-	for i := range complexSvrList {
-		result[complexSvrList[i]] = true
-	}
-
-	for i := range easySvrList {
-		if _, exist := result[easySvrList[i]]; !exist {
-			result[easySvrList[i]] = true
-		}
-	}
-
-	finalSvrList := make([]string, 0)
-	for k := range result {
-		finalSvrList = append(finalSvrList, k)
-	}
-
-	complexConf.GetGlobal().GetServerConnector().SetAddresses(finalSvrList)
+func SplitDescription(description string) (string, string) {
+	str := strings.Split(description, ":")
+	namespace, serviceName := str[0], str[1]
+	return namespace, serviceName
 }
 
 func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Instance {
@@ -94,19 +66,65 @@ func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Inst
 		weight = defaultWeight
 	}
 	addr := PolarisInstance.GetHost() + ":" + strconv.Itoa(int(PolarisInstance.GetPort()))
-	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, nil)
-	// In KitexInstance , tags can be used as IDC、Cluster、Env and so on.
+
+	tags := map[string]string{
+		"namespace": PolarisInstance.GetNamespace(),
+	}
+
+	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags)
+	// In KitexInstance , tags can be used as IDC、Cluster、Env 、Namespaceand so on.
 	return KitexInstance
 }
 
-func LoadPolarisAddress(confPath string) ([]string, error) {
-	var polarisAddresses []string
-	if confPath != "" && model.IsFile(confPath) {
-		Conf, err := config.LoadConfigurationByFile(confPath)
-		if err != nil {
-			return polarisAddresses, err
-		}
-		polarisAddresses = Conf.Global.ServerConnector.Addresses
+func GetLocalIPv4Address() (string, error) {
+	addr, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
 	}
-	return polarisAddresses, nil
+
+	for _, addr := range addr {
+		ipNet, isIpNet := addr.(*net.IPNet)
+		if isIpNet && !ipNet.IP.IsLoopback() {
+			ipv4 := ipNet.IP.To4()
+			if ipv4 != nil {
+				return ipv4.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("not found ipv4 address")
+}
+
+func GetInfoHostAndPort(Addr string) (string, int, error) {
+	infoHost, port, err := net.SplitHostPort(Addr)
+	if err != nil {
+		return "", 0, err
+	} else {
+		if port == "" {
+			return infoHost, 0, fmt.Errorf("registry info addr missing port")
+		}
+		if infoHost == "" {
+			ipv4, err := GetLocalIPv4Address()
+			if err != nil {
+				return "", 0, fmt.Errorf("get local ipv4 error, cause %v", err)
+			}
+			infoHost = ipv4
+		}
+	}
+	infoPort, err := strconv.Atoi(port)
+	if err != nil {
+		return "", 0, err
+	}
+	return infoHost, infoPort, nil
+}
+
+func GetInstanceKey(namespace, serviceName, host, port string) string {
+	var instanceKey strings.Builder
+	instanceKey.WriteString(namespace)
+	instanceKey.WriteString(":")
+	instanceKey.WriteString(serviceName)
+	instanceKey.WriteString(":")
+	instanceKey.WriteString(host)
+	instanceKey.WriteString(":")
+	instanceKey.WriteString(port)
+	return instanceKey.String()
 }

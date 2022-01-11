@@ -21,9 +21,11 @@ import (
 	"log"
 	"net"
 
+	"github.com/cloudwego/kitex/pkg/registry"
+	"github.com/polarismesh/polaris-go/pkg/config"
+
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
-	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	polaris "github.com/kitex-contrib/registry-polaris"
 )
@@ -40,17 +42,24 @@ func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respo
 }
 
 func main() {
-	polarisAddresses, error := polaris.LoadPolarisAddress(confPath)
-	if error != nil {
-		log.Fatal(error)
+	Conf, err := config.LoadConfigurationByFile(confPath)
+	if err != nil {
+		log.Fatal(err)
 	}
+	polarisAddresses := Conf.Global.ServerConnector.Addresses
+
 	r, err := polaris.NewPolarisRegistry(polarisAddresses)
 	if err != nil {
 		log.Fatal(err)
 	}
-	newServer := hello.NewServer(new(HelloImpl), server.WithRegistry(r), server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
+	Info := &registry.Info{
 		ServiceName: "echo",
-	}), server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8888}))
+		Tags: map[string]string{
+			"namespace": "Polaris",
+		},
+	}
+	newServer := hello.NewServer(new(HelloImpl), server.WithRegistry(r), server.WithRegistryInfo(Info),
+		server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8888}))
 
 	err = newServer.Run()
 	if err != nil {
