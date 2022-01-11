@@ -115,7 +115,7 @@ func (svr *polarisRegistry) Deregister(info *registry.Info) error {
 	svr.lock.RUnlock()
 	if !ok {
 		err = perrors.Errorf("instance{%s} has not registered", instanceKey)
-		return nil
+		return err
 	}
 	err = svr.provider.Deregister(request)
 	if err != nil {
