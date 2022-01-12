@@ -19,3 +19,6 @@
 *.iml
 # Vscode files
 .vscode
+example/client/polaris
+example/server/polaris
+polaris
