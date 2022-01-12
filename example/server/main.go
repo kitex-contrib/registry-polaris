@@ -21,16 +21,21 @@ import (
 	"log"
 	"net"
 
-	"github.com/cloudwego/kitex/pkg/registry"
-	"github.com/polarismesh/polaris-go/pkg/config"
-
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
+	"github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/server"
 	polaris "github.com/kitex-contrib/registry-polaris"
+	"github.com/polarismesh/polaris-go/pkg/config"
 )
 
-const confPath = "polaris.yaml"
+const (
+	confPath  = "polaris.yaml"
+	Namespace = "Polaris"
+	// At present,polaris server tag is v1.4.0，can't support auto create namespace,
+	// If you want to use a namespace other than default,Polaris ,before you register an instance,
+	// you should create the namespace at polaris console first.
+)
 
 type HelloImpl struct{}
 
@@ -41,6 +46,7 @@ func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respo
 	return
 }
 
+//  // https://www.cloudwego.io/docs/kitex/tutorials/framework-exten/registry/#integrate-into-kitex
 func main() {
 	Conf, err := config.LoadConfigurationByFile(confPath)
 	if err != nil {
@@ -55,7 +61,7 @@ func main() {
 	Info := &registry.Info{
 		ServiceName: "echo",
 		Tags: map[string]string{
-			"namespace": "Polaris",
+			"namespace": Namespace,
 		},
 	}
 	newServer := hello.NewServer(new(HelloImpl), server.WithRegistry(r), server.WithRegistryInfo(Info),

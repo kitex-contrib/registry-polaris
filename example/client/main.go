@@ -21,15 +21,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/polarismesh/polaris-go/pkg/config"
-
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
 	"github.com/cloudwego/kitex/client"
 	polaris "github.com/kitex-contrib/registry-polaris"
+	"github.com/polarismesh/polaris-go/pkg/config"
 )
 
-const confPath = "polaris.yaml"
+const (
+	confPath  = "polaris.yaml"
+	Namespace = "Polaris"
+	// At present,polaris server tag is v1.4.0，can't support auto create namespace,
+	// if you want to use a namespace other than default,Polaris ,before you register an instance,
+	// you should create the namespace at polaris console first.
+)
 
 func main() {
 	Conf, err := config.LoadConfigurationByFile(confPath)
@@ -37,14 +42,15 @@ func main() {
 		log.Fatal(err)
 	}
 	polarisAddresses := Conf.Global.ServerConnector.Addresses
-	namespace := Conf.Consumer.ServicesSpecific[0].Namespace
 
 	r, err := polaris.NewPolarisResolver(polarisAddresses)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	newClient := hello.MustNewClient("echo", client.WithTag("namespace", namespace), client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
+	// client.WithTag sets the namespace tag for service discovery
+	newClient := hello.MustNewClient("echo", client.WithTag("namespace", Namespace),
+		client.WithResolver(r), client.WithRPCTimeout(time.Second*60))
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 		resp, err := newClient.Echo(ctx, &api.Request{Message: "Hi,polaris!"})

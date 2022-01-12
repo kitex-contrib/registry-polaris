@@ -29,7 +29,7 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
-// GetPolarisConfig get polaris config from endpoints
+// GetPolarisConfig get polaris config from endpoints.
 func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	if len(endpoints) == 0 {
 		return nil, perrors.New("endpoints is empty!")
@@ -54,12 +54,14 @@ func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
 	return sdkCtx, nil
 }
 
+// SplitDescription splits description to namespace and serviceName.
 func SplitDescription(description string) (string, string) {
 	str := strings.Split(description, ":")
 	namespace, serviceName := str[0], str[1]
 	return namespace, serviceName
 }
 
+// ChangePolarisInstanceToKitex transforms polaris instance to Kitex instance.
 func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Instance {
 	weight := PolarisInstance.GetWeight()
 	if weight <= 0 {
@@ -72,10 +74,11 @@ func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Inst
 	}
 
 	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags)
-	// In KitexInstance , tags can be used as IDC、Cluster、Env 、Namespaceand so on.
+	// In KitexInstance , tags can be used as IDC、Cluster、Env 、namespace、and so on.
 	return KitexInstance
 }
 
+// GetLocalIPv4Address gets local ipv4 address when info host is empty.
 func GetLocalIPv4Address() (string, error) {
 	addr, err := net.InterfaceAddrs()
 	if err != nil {
@@ -94,6 +97,7 @@ func GetLocalIPv4Address() (string, error) {
 	return "", fmt.Errorf("not found ipv4 address")
 }
 
+// GetInfoHostAndPort gets Host and port from info.Addr.
 func GetInfoHostAndPort(Addr string) (string, int, error) {
 	infoHost, port, err := net.SplitHostPort(Addr)
 	if err != nil {
@@ -117,6 +121,7 @@ func GetInfoHostAndPort(Addr string) (string, int, error) {
 	return infoHost, infoPort, nil
 }
 
+// GetInstanceKey generates instanceKey  for one instance.
 func GetInstanceKey(namespace, serviceName, host, port string) string {
 	var instanceKey strings.Builder
 	instanceKey.WriteString(namespace)

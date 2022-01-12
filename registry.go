@@ -158,6 +158,7 @@ func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRe
 	}
 }
 
+// validateInfo validates registry.Info.
 func validateInfo(info *registry.Info) error {
 	if info.ServiceName == "" {
 		return fmt.Errorf("missing service name in Register")

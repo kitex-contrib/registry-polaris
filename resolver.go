@@ -79,7 +79,7 @@ func (polaris *polarisResolver) Target(ctx context.Context, target rpcinfo.Endpo
 	return serviceIdentification.String()
 }
 
-// Watcher return registered service changes
+// Watcher return registered service changes.
 func (polaris *polarisResolver) Watcher(ctx context.Context, desc string) (discovery.Change, error) {
 	var (
 		eps    []discovery.Instance
