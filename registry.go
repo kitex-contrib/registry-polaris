@@ -151,6 +151,7 @@ func (svr *polarisRegistry) doHeartbeat(ctx context.Context, ins *api.InstanceRe
 	for {
 		select {
 		case <-ctx.Done():
+			ticker.Stop()
 			return
 		case <-ticker.C:
 			svr.provider.Heartbeat(heartbeat)
