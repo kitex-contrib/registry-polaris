@@ -24,7 +24,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/polarismesh/polaris-go/api"
-	"github.com/polarismesh/polaris-go/pkg/config"
 	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
@@ -49,22 +48,7 @@ type polarisResolver struct {
 
 // NewPolarisResolver creates a polaris based resolver.
 func NewPolarisResolver(configFile ...string) (Resolver, error) {
-	var (
-		cfg config.Configuration
-		err error
-	)
-
-	if len(configFile) != 0 {
-		cfg, err = config.LoadConfigurationByFile(configFile[0])
-	} else {
-		cfg, err = config.LoadConfigurationByDefaultFile()
-	}
-
-	if err != nil {
-		return &polarisResolver{}, err
-	}
-
-	sdkCtx, err := api.InitContextByConfig(cfg)
+	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
 		return &polarisResolver{}, err
 	}

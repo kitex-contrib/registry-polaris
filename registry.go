@@ -26,7 +26,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/registry"
 	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
-	"github.com/polarismesh/polaris-go/pkg/config"
 	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
@@ -60,22 +59,7 @@ type polarisRegistry struct {
 
 // NewPolarisRegistry creates a polaris based registry.
 func NewPolarisRegistry(configFile ...string) (Registry, error) {
-	var (
-		cfg config.Configuration
-		err error
-	)
-
-	if len(configFile) != 0 {
-		cfg, err = config.LoadConfigurationByFile(configFile[0])
-	} else {
-		cfg, err = config.LoadConfigurationByDefaultFile()
-	}
-
-	if err != nil {
-		return &polarisRegistry{}, err
-	}
-
-	sdkCtx, err := api.InitContextByConfig(cfg)
+	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
 		return &polarisRegistry{}, err
 	}

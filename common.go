@@ -23,34 +23,33 @@ import (
 	"strings"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
-	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
 // GetPolarisConfig get polaris config from endpoints.
-func GetPolarisConfig(endpoints []string) (api.SDKContext, error) {
-	if len(endpoints) == 0 {
-		return nil, perrors.New("endpoints is empty!")
+func GetPolarisConfig(configFile ...string) (api.SDKContext, error) {
+	var (
+		cfg config.Configuration
+		err error
+	)
+
+	if len(configFile) != 0 {
+		cfg, err = config.LoadConfigurationByFile(configFile[0])
+	} else {
+		cfg, err = config.LoadConfigurationByDefaultFile()
 	}
 
-	serverConfigs := make([]string, 0, len(endpoints))
-	for _, addr := range endpoints {
-		ip, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return nil, perrors.WithMessagef(err, "split [%s] ", addr)
-		}
-		port, _ := strconv.Atoi(portStr)
-		serverConfigs = append(serverConfigs, fmt.Sprintf("%s:%d", ip, uint64(port)))
-	}
-
-	polarisConf := config.NewDefaultConfiguration(serverConfigs)
-
-	sdkCtx, err := api.InitContextByConfig(polarisConf)
 	if err != nil {
 		return nil, err
 	}
+
+	sdkCtx, err := api.InitContextByConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return sdkCtx, nil
 }
 
