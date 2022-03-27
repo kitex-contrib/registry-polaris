@@ -35,7 +35,7 @@ const (
 )
 
 func main() {
-        ...
+    ...
 	r, err := polaris.NewPolarisRegistry(confPath)
 	if err != nil {
 		log.Fatal(err)
@@ -85,7 +85,7 @@ const (
 )
 
 func main() {
-        ...
+    ...
 	r, err := polaris.NewPolarisResolver(confPath)
 	if err != nil {
 		log.Fatal(err)
