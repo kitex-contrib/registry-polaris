@@ -60,7 +60,6 @@ type polarisRegistry struct {
 
 // NewPolarisRegistry creates a polaris based registry.
 func NewPolarisRegistry(configFile ...string) (Registry, error) {
-
 	var (
 		cfg config.Configuration
 		err error
