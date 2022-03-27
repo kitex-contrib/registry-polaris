@@ -25,11 +25,9 @@ import (
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
 	"github.com/cloudwego/kitex/client"
 	polaris "github.com/kitex-contrib/registry-polaris"
-	"github.com/polarismesh/polaris-go/pkg/config"
 )
 
 const (
-	confPath  = "polaris.yaml"
 	Namespace = "Polaris"
 	// At present,polaris server tag is v1.4.0，can't support auto create namespace,
 	// if you want to use a namespace other than default,Polaris ,before you register an instance,
@@ -37,13 +35,7 @@ const (
 )
 
 func main() {
-	Conf, err := config.LoadConfigurationByFile(confPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	polarisAddresses := Conf.Global.ServerConnector.Addresses
-
-	r, err := polaris.NewPolarisResolver(polarisAddresses)
+	r, err := polaris.NewPolarisResolver()
 	if err != nil {
 		log.Fatal(err)
 	}
