@@ -58,11 +58,12 @@ type polarisRegistry struct {
 }
 
 // NewPolarisRegistry creates a polaris based registry.
-func NewPolarisRegistry(endpoints []string) (Registry, error) {
-	sdkCtx, err := GetPolarisConfig(endpoints)
+func NewPolarisRegistry(configFile ...string) (Registry, error) {
+	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
-		return &polarisRegistry{}, err
+		return nil, err
 	}
+
 	pRegistry := &polarisRegistry{
 		consumer:    api.NewConsumerAPIByContext(sdkCtx),
 		provider:    api.NewProviderAPIByContext(sdkCtx),

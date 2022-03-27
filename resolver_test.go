@@ -33,9 +33,9 @@ const (
 )
 
 func TestPolarisResolver(t *testing.T) {
-	rg, err := NewPolarisRegistry([]string{"127.0.0.1:8091"})
+	rg, err := NewPolarisRegistry()
 	require.Nil(t, err)
-	rs, err := NewPolarisResolver([]string{"127.0.0.1:8091"})
+	rs, err := NewPolarisResolver()
 	require.Nil(t, err)
 
 	// test register service
@@ -97,6 +97,6 @@ func TestPolarisResolver(t *testing.T) {
 }
 
 func TestEmptyEndpoints(t *testing.T) {
-	_, err := NewPolarisResolver([]string{})
-	require.NotNil(t, err)
+	_, err := NewPolarisResolver()
+	require.Nil(t, err)
 }

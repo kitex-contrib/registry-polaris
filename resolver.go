@@ -23,7 +23,6 @@ import (
 
 	"github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
-	perrors "github.com/pkg/errors"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
@@ -48,10 +47,10 @@ type polarisResolver struct {
 }
 
 // NewPolarisResolver creates a polaris based resolver.
-func NewPolarisResolver(endpoints []string) (Resolver, error) {
-	sdkCtx, err := GetPolarisConfig(endpoints)
+func NewPolarisResolver(configFile ...string) (Resolver, error) {
+	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
+		return nil, err
 	}
 
 	newInstance := &polarisResolver{
