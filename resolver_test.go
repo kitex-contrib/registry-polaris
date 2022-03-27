@@ -98,5 +98,5 @@ func TestPolarisResolver(t *testing.T) {
 
 func TestEmptyEndpoints(t *testing.T) {
 	_, err := NewPolarisResolver()
-	require.NotNil(t, err)
+	require.Nil(t, err)
 }
