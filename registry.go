@@ -61,7 +61,7 @@ type polarisRegistry struct {
 func NewPolarisRegistry(configFile ...string) (Registry, error) {
 	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
-		return &polarisRegistry{}, err
+		return nil, err
 	}
 
 	pRegistry := &polarisRegistry{

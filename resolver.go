@@ -50,7 +50,7 @@ type polarisResolver struct {
 func NewPolarisResolver(configFile ...string) (Resolver, error) {
 	sdkCtx, err := GetPolarisConfig(configFile...)
 	if err != nil {
-		return &polarisResolver{}, err
+		return nil, err
 	}
 
 	newInstance := &polarisResolver{
