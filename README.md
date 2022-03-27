@@ -35,14 +35,7 @@ const (
 )
 
 func main() {
-        ...
-	Conf, err := config.LoadConfigurationByFile(confPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	polarisAddresses := Conf.Global.ServerConnector.Addresses
-
-	r, err := polaris.NewPolarisRegistry(polarisAddresses)
+	r, err := polaris.NewPolarisRegistry(confPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,14 +84,7 @@ const (
 )
 
 func main() {
-        ...
-	Conf, err := config.LoadConfigurationByFile(confPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	polarisAddresses := Conf.Global.ServerConnector.Addresses
-
-	r, err := polaris.NewPolarisResolver(polarisAddresses)
+	r, err := polaris.NewPolarisResolver(confPath)
 	if err != nil {
 		log.Fatal(err)
 	}
