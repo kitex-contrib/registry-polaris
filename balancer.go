@@ -2,7 +2,6 @@ package polaris
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -11,6 +10,7 @@ import (
 	polaris_go "github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
+	"github.com/polarismesh/polaris-go/pkg/log"
 	"github.com/polarismesh/polaris-go/pkg/model"
 	"golang.org/x/sync/singleflight"
 )
@@ -48,7 +48,7 @@ func (pp *polarisPicker) Next(ctx context.Context, request interface{}) (ins dis
 	if pp.routerInstancesResp == nil {
 		routerInstancesResp, err := pp.routerAPI.ProcessRouters(routerRequest)
 		if nil != err {
-			fmt.Println("ProcessRouters err=", err)
+			log.GetBaseLogger().Errorf("fail to do ProcessRouters err:%+v", err)
 			return nil
 		}
 		if len(routerInstancesResp.GetInstances()) == 0 {

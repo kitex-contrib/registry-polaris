@@ -34,27 +34,6 @@ var (
 	mutexPolarisContext sync.Mutex
 )
 
-type PolarisInstance struct {
-	*model.InstanceKey
-	InstanceId           string
-	VpcId                string
-	Protocol             string
-	Version              string
-	Weight               int
-	Priority             uint32
-	Metadata             map[string]string
-	LogicSet             string
-	CircuitBreakerStatus model.CircuitBreakerStatus
-	Healthy              bool
-	Isolated             bool
-	EnableHealthCheck    bool
-	Region               string
-	Zone                 string
-	IDC                  string
-	Campus               string
-	Revision             string
-}
-
 // GetPolarisConfig get polaris config from endpoints.
 func GetPolarisConfig(configFile ...string) (api.SDKContext, error) {
 	mutexPolarisContext.Lock()
