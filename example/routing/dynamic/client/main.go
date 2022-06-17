@@ -35,9 +35,6 @@ const (
 )
 
 func main() {
-	//srcMetaData := make(map[string]string, 0)
-	//srcMetaData["lxw"] = "1"
-
 	o := polaris.Options{
 		DstNamespace: Namespace,
 		DstMetadata:  nil,
