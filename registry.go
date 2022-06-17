@@ -205,6 +205,18 @@ func createRegisterParam(info *registry.Info) (*api.InstanceRegisterRequest, str
 		},
 	}
 
+	//version, ok := info.Tags["version"]
+	//if ok {
+	//	req.Version = &version
+	//}
+
+	env, ok := info.Tags["env"]
+	if ok {
+		req.Metadata = map[string]string{
+			"env": env,
+		}
+	}
+
 	return req, instanceKey, nil
 }
 

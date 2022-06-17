@@ -20,14 +20,12 @@ import (
 	"context"
 	"log"
 	"net"
-	"time"
 
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
 	"github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/server"
 	polaris "github.com/kitex-contrib/registry-polaris"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -43,9 +41,7 @@ func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respo
 	resp = &api.Response{
 		Message: req.Message + "Hi,Kitex!",
 	}
-	time.Sleep(2 * time.Second)
 	return resp, nil
-	return resp, errors.New("lxw test")
 }
 
 //  // https://www.cloudwego.io/docs/kitex/tutorials/framework-exten/registry/#integrate-into-kitex
@@ -64,8 +60,7 @@ func main() {
 		new(HelloImpl),
 		server.WithRegistry(r),
 		server.WithRegistryInfo(Info),
-		server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8890}),
-		//server.WithConcurrencyLimiter(cl),
+		server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8891}),
 	)
 
 	err = newServer.Run()

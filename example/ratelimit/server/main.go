@@ -20,14 +20,13 @@ import (
 	"context"
 	"log"
 	"net"
-	"time"
 
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
 	"github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/server"
 	polaris "github.com/kitex-contrib/registry-polaris"
-	"github.com/pkg/errors"
+	"github.com/kitex-contrib/registry-polaris/limiter"
 )
 
 const (
@@ -43,9 +42,7 @@ func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respo
 	resp = &api.Response{
 		Message: req.Message + "Hi,Kitex!",
 	}
-	time.Sleep(2 * time.Second)
 	return resp, nil
-	return resp, errors.New("lxw test")
 }
 
 //  // https://www.cloudwego.io/docs/kitex/tutorials/framework-exten/registry/#integrate-into-kitex
@@ -60,12 +57,20 @@ func main() {
 			"namespace": Namespace,
 		},
 	}
+
+	qpsLimiter, err := limiter.NewQPSLimiter()
+	if err != nil {
+		log.Fatal(err)
+	}
+	qpsLimiter.WithNamespace(Namespace)
+	qpsLimiter.WithServiceName("echo")
+
 	newServer := hello.NewServer(
 		new(HelloImpl),
 		server.WithRegistry(r),
 		server.WithRegistryInfo(Info),
 		server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8890}),
-		//server.WithConcurrencyLimiter(cl),
+		server.WithQPSLimiter(qpsLimiter),
 	)
 
 	err = newServer.Run()

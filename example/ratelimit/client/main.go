@@ -19,57 +19,48 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"time"
 
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/hello/kitex_gen/api/hello"
-	"github.com/cloudwego/kitex/pkg/registry"
-	"github.com/cloudwego/kitex/server"
+	"github.com/cloudwego/kitex/client"
 	polaris "github.com/kitex-contrib/registry-polaris"
-	"github.com/pkg/errors"
 )
 
 const (
 	Namespace = "Polaris"
 	// At present,polaris server tag is v1.4.0，can't support auto create namespace,
-	// If you want to use a namespace other than default,Polaris ,before you register an instance,
+	// if you want to use a namespace other than default,Polaris ,before you register an instance,
 	// you should create the namespace at polaris console first.
 )
 
-type HelloImpl struct{}
-
-func (h *HelloImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
-	resp = &api.Response{
-		Message: req.Message + "Hi,Kitex!",
-	}
-	time.Sleep(2 * time.Second)
-	return resp, nil
-	return resp, errors.New("lxw test")
-}
-
-//  // https://www.cloudwego.io/docs/kitex/tutorials/framework-exten/registry/#integrate-into-kitex
 func main() {
-	r, err := polaris.NewPolarisRegistry()
+	o := polaris.Options{
+		DstNamespace: Namespace,
+		DstMetadata:  nil,
+		SrcNamespace: "",
+		SrcService:   "",
+		SrcMetadata:  nil,
+	}
+	r, err := polaris.NewPolarisResolverV2(o)
 	if err != nil {
 		log.Fatal(err)
 	}
-	Info := &registry.Info{
-		ServiceName: "echo",
-		Tags: map[string]string{
-			"namespace": Namespace,
-		},
-	}
-	newServer := hello.NewServer(
-		new(HelloImpl),
-		server.WithRegistry(r),
-		server.WithRegistryInfo(Info),
-		server.WithServiceAddr(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8890}),
-		//server.WithConcurrencyLimiter(cl),
+
+	newClient := hello.MustNewClient("echo",
+		client.WithResolver(r),
+		client.WithRPCTimeout(time.Second*360),
+		client.WithMiddleware(polaris.NewUpdateServiceCallResultMW()),
 	)
 
-	err = newServer.Run()
-	if err != nil {
-		log.Fatal(err)
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*360)
+		resp, err := newClient.Echo(ctx, &api.Request{Message: "Hi,polaris!"})
+		cancel()
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println(resp)
+		time.Sleep(2 * time.Second)
 	}
 }

@@ -1,0 +1,66 @@
+global:
+  serverConnector:
+    addresses:
+      - 127.0.0.1:8091
+consumer:
+  circuitBreaker:
+    enable: true
+    #描述:实例定时熔断检测周期
+    #类型:string
+    #格式:^\d+(ms|s|m|h)$
+    #范围:[100ms:...]
+    #默认值:30s
+    checkPeriod: 60s
+    #描述:熔断器半开后最大允许的请求数
+    #类型:int
+    #范围:[3:...]
+    #默认值:10
+    requestCountAfterHalfOpen: 10
+    #描述:熔断器打开后，多久后转换为半开状态
+    #类型:string
+    #格式:^\d+(ms|s|m|h)$
+    #范围:[1s:...]
+    #默认值:30s
+    sleepWindow: 60s
+    #描述:熔断器半开到关闭所必须的最少成功请求数
+    #类型:int
+    #范围:[1:requestCountAfterHalfOpen]
+    #默认值:8
+    successCountAfterHalfOpen: 8
+    #描述:熔断器半开到关闭的统计周期
+    #类型:string
+    #范围:[10s:...]
+    #默认值:60s
+    recoverWindow: 60s
+    #描述:熔断器半开到关闭的统计滑桶数
+    #类型:int
+    #范围:[1:...]
+    #默认值:10
+    recoverNumBuckets: 10
+    #描述:熔断策略，SDK会根据策略名称加载对应的熔断器插件
+    #类型:list
+    #范围:已注册的熔断器插件名
+    #默认值：基于周期连续错误数熔断（errorCount）、以及基于周期错误率的熔断策略（errorRate）
+    chain:
+      - errorCount
+      #- errorRate
+    #描述:熔断插件配置
+    plugin:
+      #描述:基于周期连续错误数熔断策略配置
+      errorCount:
+        #描述:触发连续错误熔断的阈值
+        #类型:int
+        #范围:[1:...]
+        #默认值:10
+        continuousErrorThreshold: 2
+        #描述:连续错误数的最小统计单元数量
+        #类型:int
+        #范围:[1:...]
+        #默认值:10
+        metricNumBuckets: 10
+        #描述:连续失败的统计周期
+        #类型:string
+        #格式:^\d+(ms|s|m|h)$
+        #范围:[10ms:...]
+        #默认值:1m
+        metricStatTimeWindow: 1m0s

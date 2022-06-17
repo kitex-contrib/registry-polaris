@@ -21,6 +21,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/polarismesh/polaris-go/api"
@@ -28,8 +29,40 @@ import (
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
 
+var (
+	polarisContext      api.SDKContext
+	mutexPolarisContext sync.Mutex
+)
+
+type PolarisInstance struct {
+	*model.InstanceKey
+	InstanceId           string
+	VpcId                string
+	Protocol             string
+	Version              string
+	Weight               int
+	Priority             uint32
+	Metadata             map[string]string
+	LogicSet             string
+	CircuitBreakerStatus model.CircuitBreakerStatus
+	Healthy              bool
+	Isolated             bool
+	EnableHealthCheck    bool
+	Region               string
+	Zone                 string
+	IDC                  string
+	Campus               string
+	Revision             string
+}
+
 // GetPolarisConfig get polaris config from endpoints.
 func GetPolarisConfig(configFile ...string) (api.SDKContext, error) {
+	mutexPolarisContext.Lock()
+	defer mutexPolarisContext.Unlock()
+	if nil != polarisContext {
+		return polarisContext, nil
+	}
+
 	var (
 		cfg config.Configuration
 		err error
@@ -45,12 +78,12 @@ func GetPolarisConfig(configFile ...string) (api.SDKContext, error) {
 		return nil, err
 	}
 
-	sdkCtx, err := api.InitContextByConfig(cfg)
+	polarisContext, err = api.InitContextByConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return sdkCtx, nil
+	return polarisContext, nil
 }
 
 // SplitDescription splits description to namespace and serviceName.
@@ -60,21 +93,58 @@ func SplitDescription(description string) (string, string) {
 	return namespace, serviceName
 }
 
+// SplitCachedKey splits description to namespace and serviceName.
+func SplitCachedKey(cachedKey string) (string, string) {
+	str := strings.Split(cachedKey, ":")
+	namespace, serviceName := str[1], str[2]
+	return namespace, serviceName
+}
+
 // ChangePolarisInstanceToKitex transforms polaris instance to Kitex instance.
-func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) discovery.Instance {
+func ChangePolarisInstanceToKitex(PolarisInstance model.Instance) *polarisKitexInstance {
 	weight := PolarisInstance.GetWeight()
 	if weight <= 0 {
-		weight = defaultWeight
+		weight = DefaultWeight
 	}
 	addr := PolarisInstance.GetHost() + ":" + strconv.Itoa(int(PolarisInstance.GetPort()))
 
 	tags := map[string]string{
-		"namespace": PolarisInstance.GetNamespace(),
+		"namespace":  PolarisInstance.GetNamespace(),
+		"instanceId": PolarisInstance.GetId(),
 	}
 
-	KitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags)
+	kitexInstance := &polarisKitexInstance{
+		kitexInstance:   discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags),
+		polarisInstance: PolarisInstance,
+	}
+
+	// kitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags)
 	// In KitexInstance , tags can be used as IDC、Cluster、Env 、namespace、and so on.
-	return KitexInstance
+	return kitexInstance
+}
+
+// ChangePolarisInstanceToKitexV2 transforms polaris instance to Kitex instance.
+func ChangePolarisInstanceToKitexV2(PolarisInstance model.Instance, polarisOptions Options) *polarisKitexInstance {
+	weight := PolarisInstance.GetWeight()
+	if weight <= 0 {
+		weight = DefaultWeight
+	}
+	addr := PolarisInstance.GetHost() + ":" + strconv.Itoa(int(PolarisInstance.GetPort()))
+
+	tags := map[string]string{
+		"namespace":  PolarisInstance.GetNamespace(),
+		"instanceId": PolarisInstance.GetId(),
+	}
+
+	kitexInstance := &polarisKitexInstance{
+		kitexInstance:   discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags),
+		polarisInstance: PolarisInstance,
+		polarisOptions:  polarisOptions,
+	}
+
+	// kitexInstance := discovery.NewInstance(PolarisInstance.GetProtocol(), addr, weight, tags)
+	// In KitexInstance , tags can be used as IDC、Cluster、Env 、namespace、and so on.
+	return kitexInstance
 }
 
 // GetLocalIPv4Address gets local ipv4 address when info host is empty.
