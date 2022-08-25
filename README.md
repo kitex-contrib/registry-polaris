@@ -1,14 +1,18 @@
 # registry-polaris (*This is a community driven project*)
 
-Some application runtime use [polaris](https://github.com/polarismesh/polaris) for service discovery. Polaris is a cloud-native service discovery and governance center. 
-It can be used to solve the problem of service connection, fault tolerance, traffic control and secure in distributed and microservice architecture.
+## Notice 
 
-## How to install registry-polaris?
+This repository has been migrated to [polaris](https://github.com/kitex-contrib/polaris) and welcome to use.
+
+~~Some application runtime use [polaris](https://github.com/polarismesh/polaris) for service discovery. Polaris is a cloud-native service discovery and governance center. 
+It can be used to solve the problem of service connection, fault tolerance, traffic control and secure in distributed and microservice architecture.~~
+
+## ~~How to install registry-polaris?~~
 ```
 go get -u github.com/kitex-contrib/registry-polaris
 ```
 
-## How to use with Kitex server?
+## ~~How to use with Kitex server?~~
 
 ```go
 import (
@@ -59,7 +63,7 @@ func main() {
 ```
 
 
-## How to use with Kitex client?
+## ~~How to use with Kitex client?~~
 
 ```go
 import (
@@ -107,18 +111,18 @@ func main() {
 }
 
 ```
-## How to install polaris?
+## ~~How to install polaris?~~
 Polaris support stand-alone and cluster. More information can be found in [install polaris](https://polarismesh.cn/zh/doc/%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8/%E5%AE%89%E8%A3%85%E6%9C%8D%E5%8A%A1%E7%AB%AF/%E5%AE%89%E8%A3%85%E5%8D%95%E6%9C%BA%E7%89%88.html#%E5%8D%95%E6%9C%BA%E7%89%88%E5%AE%89%E8%A3%85)
 
-## Todolist
-Welcome to contribute your ideas
+## ~~Todolist~~
+~~Welcome to contribute your ideas~~
 
-## Use polaris with Kitex
+## ~~Use polaris with Kitex~~
 
-See example and test
+~~See example and test~~
   
-## Compatibility
+## ~~Compatibility~~
 
-Compatible with polaris.
+~~Compatible with polaris.~~
 
 maintained by: [liu-song](https://github.com/liu-song)
